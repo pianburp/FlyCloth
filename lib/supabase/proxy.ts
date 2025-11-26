@@ -17,7 +17,7 @@ export async function updateSession(request: NextRequest) {
   // variable. Always create a new one on each request.
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!,
     {
       cookies: {
         getAll() {
@@ -39,10 +39,10 @@ export async function updateSession(request: NextRequest) {
   );
 
   // Do not run code between createServerClient and
-  // supabase.auth.getClaims(). A simple mistake could make it very hard to debug
+  // supabase.auth.getUser(). A simple mistake could make it very hard to debug
   // issues with users being randomly logged out.
 
-  // IMPORTANT: If you remove getClaims() and you use server-side rendering
+  // IMPORTANT: DO NOT remove getUser() if you use server-side rendering
   // with the Supabase client, your users may be randomly logged out.
   const {
     data: { user },
@@ -61,13 +61,11 @@ export async function updateSession(request: NextRequest) {
 
   // If user is authenticated, check role-based access
   if (user) {
-    const { data: profile, error } = await supabase
+    const { data: profile } = await supabase
       .from("profiles")
       .select("role")
       .eq("id", user.id)
       .single();
-
-    console.log("Profile query result:", { profile, error, userId: user.id });
     
     const userRole = profile?.role || "user";
 

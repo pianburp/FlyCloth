@@ -10,12 +10,20 @@ import { ContactUs } from "@/components/contact-us";
 
 export default function Home() {
   return (
-    <main className="min-h-screen bg-background flex flex-col">
+    <main className="min-h-screen bg-background flex flex-col relative overflow-hidden">
+      {/* Background Pattern */}
+      <div className="fixed inset-0 -z-10 h-full w-full bg-background bg-[linear-gradient(to_right,#8080800a_1px,transparent_1px),linear-gradient(to_bottom,#8080800a_1px,transparent_1px)] bg-[size:14px_24px]">
+        <div className="absolute left-0 right-0 top-0 -z-10 m-auto h-[310px] w-[310px] rounded-full bg-primary/20 opacity-20 blur-[100px]"></div>
+        <div className="absolute right-0 bottom-0 -z-10 h-[310px] w-[310px] rounded-full bg-secondary/20 opacity-20 blur-[100px]"></div>
+      </div>
+
       {/* Minimalist Navigation Bar */}
-      <nav className="w-full flex justify-center border-b border-b-foreground/10 h-16 bg-transparent backdrop-blur-sm">
-        <div className="w-full flex justify-between items-center px-4">
-          <Link href="/" className="text-xl font-bold tracking-tight">BajuNow</Link>
-          <div className="flex items-center gap-2">
+      <nav className="fixed top-0 z-50 w-full border-b border-white/10 bg-background/50 backdrop-blur-md">
+        <div className="container mx-auto flex h-16 items-center justify-between px-4">
+          <Link href="/" className="flex items-center gap-2 transition-opacity hover:opacity-90">
+             <span className="text-xl font-bold tracking-tight text-white">BajuNow</span>
+          </Link>
+          <div className="flex items-center gap-4">
             {!hasEnvVars ? <EnvVarWarning /> : <Suspense><AuthButton /></Suspense>}
             <ThemeSwitcher />
           </div>
@@ -23,29 +31,28 @@ export default function Home() {
       </nav>
 
       {/* Hero Section */}
-      <section className="w-full flex justify-center items-center py-8 px-8">
       <Hero />
-      </section>
 
-      {/* Features Section */}
-      <section className="w-full flex justify-center items-center py-8 px-8"> 
-      <Features />
-      </section>
+      <div className="flex flex-col gap-16 pb-16 pt-16">
+        {/* Features Section */}
+        <section className="container mx-auto px-4 animate-in fade-in slide-in-from-bottom-8 duration-700 delay-200">
+          <Features />
+        </section>
 
-      {/* Contact Us Section */}
-      <section className="w-full flex justify-center items-center py-8 px-8">
-      <ContactUs />
-      </section>
+        {/* Contact Us Section */}
+        <section className="container mx-auto px-4 animate-in fade-in slide-in-from-bottom-8 duration-700 delay-300">
+          <ContactUs />
+        </section>
+      </div>
 
       {/* Minimalist Footer */}
-      <footer className="w-full border-t py-8 mt-auto">
-        <div className="w-full flex flex-col sm:flex-row items-center justify-between px-4 gap-4">
-          <p className="text-xs text-muted-foreground">© 2025 BajuNow — All rights reserved</p>
-          <div className="flex items-center gap-4">
-            <a className="text-muted-foreground hover:underline" href="#">Instagram</a>
-            <a className="text-muted-foreground hover:underline" href="#">Twitter</a>
-            <a className="text-muted-foreground hover:underline" href="#">Facebook</a>
-            <ThemeSwitcher />
+      <footer className="w-full border-t bg-background/50 backdrop-blur-sm py-8 mt-auto">
+        <div className="container mx-auto flex flex-col sm:flex-row items-center justify-between px-4 gap-4">
+          <p className="text-sm text-muted-foreground">© 2025 BajuNow — All rights reserved</p>
+          <div className="flex items-center gap-6">
+            <a className="text-sm text-muted-foreground hover:text-foreground transition-colors" href="#">Instagram</a>
+            <a className="text-sm text-muted-foreground hover:text-foreground transition-colors" href="#">Twitter</a>
+            <a className="text-sm text-muted-foreground hover:text-foreground transition-colors" href="#">Facebook</a>
           </div>
         </div>
       </footer>

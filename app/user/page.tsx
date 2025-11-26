@@ -1,10 +1,20 @@
 import { getUserProfile } from "@/lib/rbac";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { ShirtIcon, ShoppingCartIcon, PackageIcon } from "lucide-react";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
+import { ShirtIcon } from "lucide-react";
 import Link from "next/link";
+import { createClient } from "@/lib/supabase/server";
+import { Button } from "@/components/ui/button";
 
 export default async function UserDashboard() {
   const profile = await getUserProfile();
+  const supabase = await createClient();
+
+  const { data: featuredProducts } = await supabase
+    .from('products')
+    .select('*, product_images(storage_path)')
+    .eq('featured', true)
+    .eq('is_active', true)
+    .limit(6);
 
   return (
     <div className="flex flex-col gap-8">
@@ -15,64 +25,49 @@ export default async function UserDashboard() {
         </p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <Link href="/user">
-          <Card className="hover:shadow-lg transition-shadow cursor-pointer">
-            <CardHeader>
-              <ShirtIcon className="w-10 h-10 mb-2" />
-              <CardTitle>Browse Shirts</CardTitle>
-              <CardDescription>
-                Explore our latest collection
-              </CardDescription>
-            </CardHeader>
-          </Card>
-        </Link>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {featuredProducts?.map((product) => {
+          const imagePath = product.product_images?.[0]?.storage_path;
+          const imageUrl = imagePath 
+            ? supabase.storage.from('product-images').getPublicUrl(imagePath).data.publicUrl 
+            : null;
 
-        <Link href="/user/cart">
-          <Card className="hover:shadow-lg transition-shadow cursor-pointer">
-            <CardHeader>
-              <ShoppingCartIcon className="w-10 h-10 mb-2" />
-              <CardTitle>Shopping Cart</CardTitle>
-              <CardDescription>
-                View and manage your cart
-              </CardDescription>
-            </CardHeader>
-          </Card>
-        </Link>
-
-        <Link href="/user/orders">
-          <Card className="hover:shadow-lg transition-shadow cursor-pointer">
-            <CardHeader>
-              <PackageIcon className="w-10 h-10 mb-2" />
-              <CardTitle>My Orders</CardTitle>
-              <CardDescription>
-                Track your order history
-              </CardDescription>
-            </CardHeader>
-          </Card>
-        </Link>
-      </div>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Featured Shirts</CardTitle>
-          <CardDescription>Check out our popular items</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {[1, 2, 3].map((i) => (
-              <div key={i} className="border rounded-lg p-4 hover:shadow-md transition-shadow">
-                <div className="w-full h-48 bg-muted rounded-md mb-3 flex items-center justify-center">
-                  <ShirtIcon className="w-16 h-16 text-muted-foreground" />
+          return (
+            <Card key={product.id} className="flex flex-col h-full hover:shadow-lg transition-shadow">
+              <CardHeader>
+                <CardTitle className="line-clamp-1">{product.name}</CardTitle>
+                <CardDescription className="line-clamp-2">{product.description}</CardDescription>
+              </CardHeader>
+              <CardContent className="flex-grow">
+                <div className="w-full h-48 bg-muted rounded-md mb-4 flex items-center justify-center overflow-hidden">
+                  {imageUrl ? (
+                    <img 
+                      src={imageUrl} 
+                      alt={product.name} 
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <ShirtIcon className="w-16 h-16 text-muted-foreground" />
+                  )}
                 </div>
-                <h3 className="font-semibold mb-1">Premium Shirt {i}</h3>
-                <p className="text-sm text-muted-foreground mb-2">Classic design, premium quality</p>
-                <p className="font-bold text-lg">${(29.99 + i * 10).toFixed(2)}</p>
-              </div>
-            ))}
+                <p className="font-bold text-2xl text-primary">${product.base_price}</p>
+              </CardContent>
+              <CardFooter>
+                <Link href={`/user/products/${product.id}`} className="w-full">
+                  <Button className="w-full">View Details</Button>
+                </Link>
+              </CardFooter>
+            </Card>
+          );
+        })}
+        
+        {(!featuredProducts || featuredProducts.length === 0) && (
+          <div className="col-span-full text-center py-12 text-muted-foreground">
+            <ShirtIcon className="w-12 h-12 mx-auto mb-4 opacity-50" />
+            <p>No featured products available at the moment.</p>
           </div>
-        </CardContent>
-      </Card>
+        )}
+      </div>
     </div>
   );
 }

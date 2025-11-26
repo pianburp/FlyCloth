@@ -80,19 +80,19 @@ export function AuthButton() {
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-48">
-          <DropdownMenuItem asChild>
+          <DropdownMenuItem asChild className="animate-in fade-in slide-in-from-top-1 duration-300" style={{ animationDelay: '0ms', animationFillMode: 'backwards' }}>
             <Link href="/user" className="cursor-pointer">
               <Shirt className="w-4 h-4 mr-2" />
               Browse Shirts
             </Link>
           </DropdownMenuItem>
           <DropdownMenuSeparator />
-          <DropdownMenuItem asChild>
+          <DropdownMenuItem asChild className="animate-in fade-in slide-in-from-top-1 duration-300" style={{ animationDelay: '50ms', animationFillMode: 'backwards' }}>
             <Link href="/auth/login" className="cursor-pointer">
               Sign in
             </Link>
           </DropdownMenuItem>
-          <DropdownMenuItem asChild>
+          <DropdownMenuItem asChild className="animate-in fade-in slide-in-from-top-1 duration-300" style={{ animationDelay: '100ms', animationFillMode: 'backwards' }}>
             <Link href="/auth/sign-up" className="cursor-pointer font-semibold">
               Shop Now
             </Link>
@@ -107,33 +107,33 @@ export function AuthButton() {
       <DropdownMenuTrigger asChild>
         <Button size="sm" variant="outline">
           <Menu className="w-4 h-4 mr-2" />
-          <span className="hidden sm:inline">{user.email}</span>
+          <span className="hidden sm:inline">{user.user_metadata?.display_name || user.email}</span>
           <Badge variant={userRole === "admin" ? "destructive" : "secondary"} className="text-xs ml-2">
             {userRole === "admin" ? "Admin" : "User"}
           </Badge>
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-48">
-        <DropdownMenuLabel>
+        <DropdownMenuLabel className="animate-in fade-in slide-in-from-top-1 duration-300" style={{ animationDelay: '0ms', animationFillMode: 'backwards' }}>
           <div className="flex flex-col">
-            <span className="text-sm font-semibold">{user.email}</span>
+            <span className="text-sm font-semibold">{user.user_metadata?.display_name || user.email}</span>
             <span className="text-xs text-muted-foreground">{userRole === "admin" ? "Administrator" : "Customer"}</span>
           </div>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
-        <DropdownMenuItem asChild>
+        <DropdownMenuItem asChild className="animate-in fade-in slide-in-from-top-1 duration-300" style={{ animationDelay: '50ms', animationFillMode: 'backwards' }}>
           <Link href="/user" className="cursor-pointer">
             <Shirt className="w-4 h-4 mr-2" />
             Browse Shirts
           </Link>
         </DropdownMenuItem>
-        <DropdownMenuItem asChild>
+        <DropdownMenuItem asChild className="animate-in fade-in slide-in-from-top-1 duration-300" style={{ animationDelay: '100ms', animationFillMode: 'backwards' }}>
           <Link href="/user/cart" className="cursor-pointer">
             <ShoppingCart className="w-4 h-4 mr-2" />
             Cart
           </Link>
         </DropdownMenuItem>
-        <DropdownMenuItem asChild>
+        <DropdownMenuItem asChild className="animate-in fade-in slide-in-from-top-1 duration-300" style={{ animationDelay: '150ms', animationFillMode: 'backwards' }}>
           <Link href="/user/orders" className="cursor-pointer">
             <Package className="w-4 h-4 mr-2" />
             My Orders
@@ -141,25 +141,25 @@ export function AuthButton() {
         </DropdownMenuItem>
         {userRole === "admin" && (
           <>
-            <DropdownMenuItem asChild>
+            <DropdownMenuItem asChild className="animate-in fade-in slide-in-from-top-1 duration-300" style={{ animationDelay: '200ms', animationFillMode: 'backwards' }}>
               <Link href="/admin" className="cursor-pointer">
                 <LayoutDashboard className="w-4 h-4 mr-2" />
                 Admin Dashboard
               </Link>
             </DropdownMenuItem>
-            <DropdownMenuItem asChild>
+            <DropdownMenuItem asChild className="animate-in fade-in slide-in-from-top-1 duration-300" style={{ animationDelay: '250ms', animationFillMode: 'backwards' }}>
               <Link href="/admin/products" className="cursor-pointer">
                 <Shirt className="w-4 h-4 mr-2" />
                 Products
               </Link>
             </DropdownMenuItem>
-            <DropdownMenuItem asChild>
+            <DropdownMenuItem asChild className="animate-in fade-in slide-in-from-top-1 duration-300" style={{ animationDelay: '300ms', animationFillMode: 'backwards' }}>
               <Link href="/admin/orders" className="cursor-pointer">
                 <FileText className="w-4 h-4 mr-2" />
                 Orders
               </Link>
             </DropdownMenuItem>
-            <DropdownMenuItem asChild>
+            <DropdownMenuItem asChild className="animate-in fade-in slide-in-from-top-1 duration-300" style={{ animationDelay: '350ms', animationFillMode: 'backwards' }}>
               <Link href="/admin/settings" className="cursor-pointer">
                 <Settings className="w-4 h-4 mr-2" />
                 Settings
@@ -168,7 +168,7 @@ export function AuthButton() {
           </>
         )}
         <DropdownMenuSeparator />
-        <DropdownMenuItem onClick={handleLogout} className="cursor-pointer text-red-600">
+        <DropdownMenuItem onClick={handleLogout} className="cursor-pointer text-red-600 animate-in fade-in slide-in-from-top-1 duration-300" style={{ animationDelay: userRole === "admin" ? '400ms' : '200ms', animationFillMode: 'backwards' }}>
           <LogOut className="w-4 h-4 mr-2" />
           Logout
         </DropdownMenuItem>

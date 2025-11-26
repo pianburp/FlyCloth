@@ -142,7 +142,7 @@ WHERE id = 'your-user-id-here';
 - **Auto-generated**: Order numbers (BN{YYYYMMDD}{5-digit})
 - **Inventory tracking**: Auto-decrement on orders
 
-See [`DATABASE_SCHEMA_V2.md`](./DATABASE_SCHEMA_V2.md) for complete documentation.
+See [`DOCUMENTATION.md`](./DOCUMENTATION.md) for complete schema and setup documentation.
 
 ## Project Structure
 
@@ -327,7 +327,7 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 
 ## Support
 
-- **Documentation**: See `DATABASE_SCHEMA_V2.md`, `STORAGE_GUIDE.md`, and `RBAC_SETUP.md`
+- **Documentation**: See [`DOCUMENTATION.md`](./DOCUMENTATION.md) for complete technical documentation
 - **Issues**: Open an issue on GitHub
 - **Supabase Docs**: [supabase.com/docs](https://supabase.com/docs)
 - **Next.js Docs**: [nextjs.org/docs](https://nextjs.org/docs)

@@ -1,58 +1,103 @@
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
-import { Shirt, Truck, RefreshCcw } from "lucide-react";
+"use client";
+
+import { useRef } from "react";
+import { motion, useScroll, useTransform } from "framer-motion";
+import { Shirt, Truck, RefreshCcw, Play, Image as ImageIcon } from "lucide-react";
+import Image from "next/image";
 
 const FEATURES = [
   {
     title: "Premium Fabrics",
-    description: "We carefully select materials for comfort and longevity.",
-    svg: (
-      <div className="w-12 h-12 rounded-md flex items-center justify-center bg-gradient-to-br from-pink-300 to-violet-400 dark:from-pink-600 dark:to-violet-600">
-        <Shirt className="w-6 h-6 text-white" aria-hidden />
-      </div>
-    ),
+    description: "We carefully select materials for comfort and longevity. Our cotton is 100% organic and ethically sourced.",
+    icon: Shirt,
+    mediaType: "video",
+    src: "/video/fabrics.mp4",
   },
   {
     title: "Free Shipping",
-    description: "Enjoy free shipping on orders over $50 within the country.",
-    svg: (
-      <div className="w-12 h-12 rounded-md flex items-center justify-center bg-gradient-to-br from-cyan-200 to-indigo-300 dark:from-cyan-700 dark:to-indigo-600">
-        <Truck className="w-6 h-6 text-white" aria-hidden />
-      </div>
-    ),
+    description: "Enjoy free shipping on orders over $50 within the country. Track your package every step of the way.",
+    icon: Truck,
+    mediaType: "image",
+    src: "/images/delivery.jpg",
   },
   {
     title: "Easy Returns",
-    description: "Hassle-free 30-day returns and responsive customer support.",
-    svg: (
-      <div className="w-12 h-12 rounded-md flex items-center justify-center bg-gradient-to-br from-emerald-200 to-sky-300 dark:from-emerald-700 dark:to-sky-600">
-        <RefreshCcw className="w-6 h-6 text-white" aria-hidden />
-      </div>
-    ),
+    description: "Don't like it? Just send it back within 30 days for a full refund, no questions asked.",
+    icon: RefreshCcw,
+    mediaType: "image",
+    src: "/images/return.jpg",
   },
 ];
 
 export function Features() {
+  const containerRef = useRef(null);
+  const { scrollYProgress } = useScroll({
+    target: containerRef,
+    offset: ["start end", "end start"]
+  });
+
+  const yTransforms = [
+    useTransform(scrollYProgress, [0, 1], [0, -50]),
+    useTransform(scrollYProgress, [0, 1], [50, -100]),
+    useTransform(scrollYProgress, [0, 1], [0, -50]),
+  ];
+
   return (
-    <section className="w-full bg-background/50 dark:bg-background/10 rounded-xl p-6">
-      <div className="max-w-5xl mx-auto">
-        <h2 className="text-2xl font-semibold mb-4 text-center">Why shop with BajuNow</h2>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-6">
-          {FEATURES.map((f, idx) => (
-            <Card
-              key={f.title}
-              className={`p-6 group hover-scale transition-transform duration-300 ease-in-out shadow-sm fade-in-up fade-in-up-delayed-${idx + 1}`}
-              style={{ animationDuration: "420ms" }}
+    <section ref={containerRef} className="w-full py-24 bg-background">
+      <div className="container mx-auto px-4">
+        <div className="flex flex-col md:flex-row justify-between items-end mb-16 gap-8">
+          <div className="max-w-2xl">
+            <h2 className="text-3xl md:text-4xl font-bold tracking-tight mb-4">
+              Designed for the Modern Lifestyle
+            </h2>
+            <p className="text-lg text-muted-foreground">
+              We believe in quality, sustainability, and transparency. 
+              Experience the difference with BajuNow.
+            </p>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 lg:gap-12">
+          {FEATURES.map((feature, idx) => (
+            <motion.div 
+              key={feature.title} 
+              className="group flex flex-col gap-6"
+              style={{ y: yTransforms[idx] }}
             >
-              <CardHeader>
+              {/* Media Content */}
+              <div className="relative aspect-[4/5] w-full overflow-hidden rounded-2xl bg-muted/30 border border-border/50 group-hover:border-border transition-colors duration-300">
+                 {feature.mediaType === 'video' ? (
+                   <video
+                     autoPlay
+                     loop
+                     muted
+                     playsInline
+                     className="absolute inset-0 w-full h-full object-cover"
+                   >
+                     <source src={feature.src} type="video/mp4" />
+                   </video>
+                 ) : (
+                   <Image 
+                     src={feature.src} 
+                     alt={feature.title}
+                     fill
+                     className="object-cover transition-transform duration-500 group-hover:scale-105"
+                   />
+                 )}
+              </div>
+              
+              <div className="space-y-3">
                 <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 rounded-md flex items-center justify-center">{f.svg}</div>
-                  <CardTitle className="text-lg">{f.title}</CardTitle>
+                  <div className="p-2 rounded-full bg-primary/5 text-primary">
+                    <feature.icon className="w-5 h-5" strokeWidth={2} />
+                  </div>
+                  <h3 className="text-xl font-semibold tracking-tight">{feature.title}</h3>
                 </div>
-              </CardHeader>
-              <CardContent>
-                <p className="text-sm text-muted-foreground">{f.description}</p>
-              </CardContent>
-            </Card>
+                <p className="text-muted-foreground leading-relaxed">
+                  {feature.description}
+                </p>
+              </div>
+            </motion.div>
           ))}
         </div>
       </div>
