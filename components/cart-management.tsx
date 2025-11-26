@@ -6,9 +6,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { CartItemComponent } from "./cart-item";
 import Link from "next/link";
+import { ShoppingCart } from "lucide-react";
 
 interface CartItem {
-  id: number;
+  id: string;
   name: string;
   price: number;
   size: string;
@@ -25,7 +26,7 @@ export function CartManagement({ initialItems }: CartManagementProps) {
   const [cartItems, setCartItems] = useState<CartItem[]>(initialItems);
   const [couponCode, setCouponCode] = useState("");
 
-  const handleQuantityChange = (id: number, quantity: number) => {
+  const handleQuantityChange = (id: string, quantity: number) => {
     setCartItems(items => 
       items.map(item => 
         item.id === id ? { ...item, quantity } : item
@@ -33,7 +34,7 @@ export function CartManagement({ initialItems }: CartManagementProps) {
     );
   };
 
-  const handleRemoveItem = (id: number) => {
+  const handleRemoveItem = (id: string) => {
     setCartItems(items => items.filter(item => item.id !== id));
   };
 
@@ -56,7 +57,7 @@ export function CartManagement({ initialItems }: CartManagementProps) {
         </CardHeader>
         <CardContent>
           <div className="flex flex-col items-center justify-center py-12">
-            <div className="w-16 h-16 text-muted-foreground mb-4">🛒</div>
+            <ShoppingCart className="w-16 h-16 text-muted-foreground mb-4" />
             <p className="text-muted-foreground text-center">
               Your cart is empty. Start shopping to add items!
             </p>

@@ -7,7 +7,8 @@ import { Label } from "@/components/ui/label";
 import { ArrowLeft, Upload, Save, Trash2 } from "lucide-react";
 import Link from "next/link";
 
-export default async function EditProductPage({ params }: { params: { id: string } }) {
+export default async function EditProductPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
   try {
     await requireAdmin();
   } catch {
@@ -15,7 +16,7 @@ export default async function EditProductPage({ params }: { params: { id: string
   }
 
   // In a real app, you would fetch the product data using the ID
-  const productId = params.id;
+  const productId = id;
   
   // Mock data for demonstration
   const product = {

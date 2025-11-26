@@ -5,6 +5,10 @@ export type UserRole = "user" | "admin";
 export interface UserProfile {
   id: string;
   email: string;
+  display_name?: string;
+  full_name?: string;
+  phone?: string;
+  address?: string;
   role: UserRole;
   created_at: string;
 }
@@ -51,6 +55,10 @@ export async function getUserProfile(): Promise<UserProfile | null> {
   return {
     id: profile.id,
     email: user.email || "",
+    display_name: user.user_metadata?.full_name || user.user_metadata?.name || user.email?.split('@')[0],
+    full_name: profile.full_name,
+    phone: profile.phone,
+    address: profile.address,
     role: profile.role || "user",
     created_at: profile.created_at,
   };

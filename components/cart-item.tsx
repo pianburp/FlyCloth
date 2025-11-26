@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Plus, Minus, Trash2, ShirtIcon } from "lucide-react";
 
 interface CartItem {
-  id: number;
+  id: string;
   name: string;
   price: number;
   size: string;
@@ -17,8 +17,8 @@ interface CartItem {
 
 interface CartItemComponentProps {
   item: CartItem;
-  onQuantityChange: (id: number, quantity: number) => void;
-  onRemove: (id: number) => void;
+  onQuantityChange: (id: string, quantity: number) => void;
+  onRemove: (id: string) => void;
 }
 
 export function CartItemComponent({ item, onQuantityChange, onRemove }: CartItemComponentProps) {
@@ -37,8 +37,16 @@ export function CartItemComponent({ item, onQuantityChange, onRemove }: CartItem
 
   return (
     <div className="flex items-center gap-4 p-4 border rounded-lg">
-      <div className="w-20 h-20 bg-muted rounded-md flex items-center justify-center flex-shrink-0">
-        <ShirtIcon className="w-8 h-8 text-muted-foreground" />
+      <div className="w-20 h-20 bg-muted rounded-md flex items-center justify-center flex-shrink-0 overflow-hidden">
+        {item.image ? (
+          <img 
+            src={item.image} 
+            alt={item.name} 
+            className="w-full h-full object-cover"
+          />
+        ) : (
+          <ShirtIcon className="w-8 h-8 text-muted-foreground" />
+        )}
       </div>
       
       <div className="flex-1">
