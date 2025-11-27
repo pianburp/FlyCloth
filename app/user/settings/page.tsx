@@ -3,6 +3,8 @@ import { redirect } from "next/navigation";
 import { SettingsForm } from "./settings-form";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
+export const dynamic = 'force-dynamic';
+
 export default async function SettingsPage() {
   const profile = await getUserProfile();
 

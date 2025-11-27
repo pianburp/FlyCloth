@@ -7,6 +7,8 @@ import { createClient } from "@/lib/supabase/server";
 import { Button } from "@/components/ui/button";
 import { ProductFilters } from "@/components/product-filters";
 
+export const dynamic = 'force-dynamic';
+
 export default async function UserDashboard(props: {
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
 }) {

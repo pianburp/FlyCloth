@@ -5,6 +5,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { PackageIcon, Calendar } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 
+export const dynamic = 'force-dynamic';
+
 function getStatusVariant(status: string) {
   switch (status) {
     case 'delivered':

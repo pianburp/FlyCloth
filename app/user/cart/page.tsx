@@ -3,6 +3,8 @@ import { redirect } from "next/navigation";
 import { CartManagement } from "@/components/cart-management";
 import { createClient } from "@/lib/supabase/server";
 
+export const dynamic = 'force-dynamic';
+
 export default async function CartPage() {
   const profile = await getUserProfile();
 

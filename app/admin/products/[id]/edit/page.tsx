@@ -7,6 +7,8 @@ import { Label } from "@/components/ui/label";
 import { ArrowLeft, Upload, Save, Trash2 } from "lucide-react";
 import Link from "next/link";
 
+export const dynamic = 'force-dynamic';
+
 export default async function EditProductPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   try {

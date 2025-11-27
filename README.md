@@ -79,7 +79,7 @@
 
    ```env
    NEXT_PUBLIC_SUPABASE_URL=your_supabase_project_url
-   NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
+   NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=your_supabase_anon_key
    ```
 
    Get these values from your [Supabase project's API settings](https://supabase.com/dashboard/project/_/settings/api)
@@ -228,7 +228,7 @@ BajuNow/
    In Vercel project settings, add:
    ```
    NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
-   NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
+   NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=your_supabase_anon_key
    ```
 
 3. **Deploy**
@@ -240,7 +240,7 @@ BajuNow/
 | Variable | Description | Where to Find |
 |----------|-------------|---------------|
 | `NEXT_PUBLIC_SUPABASE_URL` | Supabase project URL | [Project Settings → API](https://supabase.com/dashboard/project/_/settings/api) |
-| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase anonymous key | [Project Settings → API](https://supabase.com/dashboard/project/_/settings/api) |
+| `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | Supabase anonymous/public key | [Project Settings → API](https://supabase.com/dashboard/project/_/settings/api) |
 
 ## Development Workflow
 
@@ -282,6 +282,11 @@ npm start
 ## Troubleshooting
 
 ### Common Issues
+
+**Issue**: Vercel build fails with `createClient()` error
+- **Solution**: Ensure `createClient()` is wrapped in `useMemo` in client components
+- Client components should use: `const supabase = useMemo(() => createClient(), []);`
+- This prevents SSR/SSG build errors when using browser-only Supabase client
 
 **Issue**: "Failed to fetch" when loading products
 - **Solution**: Verify Supabase environment variables are correct in `.env.local`

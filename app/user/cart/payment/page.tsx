@@ -4,6 +4,8 @@ import { createClient } from "@/lib/supabase/server";
 import PaymentClient from "./payment-client";
 import { getActiveCoupons } from "./actions";
 
+export const dynamic = 'force-dynamic';
+
 export default async function PaymentPage() {
   const profile = await getUserProfile();
 
