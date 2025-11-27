@@ -150,7 +150,7 @@ export default async function AdminDashboard() {
                     <p className="text-xs sm:text-sm text-muted-foreground capitalize">{order.status}</p>
                   </div>
                 </div>
-              ))}}
+              ))}
               {(!recentOrders || recentOrders.length === 0) && (
                 <p className="text-sm text-muted-foreground text-center py-4">No orders found</p>
               )}
