@@ -99,7 +99,8 @@ export function CartItemComponent({ item, onQuantityChange, onRemove }: CartItem
             onClick={() => onRemove(item.id)}
           >
             <Trash2 className="w-4 h-4" />
-        </Button>
+          </Button>
+        </div>
       </div>
     </div>
   );
