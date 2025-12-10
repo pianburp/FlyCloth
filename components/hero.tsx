@@ -25,7 +25,7 @@ export function Hero() {
       <div className="relative z-10 container mx-auto px-4 flex flex-col-reverse lg:flex-row items-center gap-8 lg:gap-12">
         <div className="flex-1 text-center lg:text-left text-white fade-in-up">
           <h1 className="text-4xl sm:text-5xl font-extrabold tracking-tight leading-tight">
-            BajuNow — Modern, Comfortable Clothing
+            FlyCloth — Modern, Comfortable Clothing
           </h1>
           <p className="mt-4 text-lg text-gray-200 max-w-xl mx-auto lg:mx-0">
             Discover high quality apparel for every season. Crafted from premium

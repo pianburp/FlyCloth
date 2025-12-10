@@ -21,7 +21,7 @@ export default function Home() {
       <nav className="fixed top-0 z-50 w-full border-b border-white/10 bg-background/50 backdrop-blur-md">
         <div className="container mx-auto flex h-16 items-center justify-between px-4">
           <Link href="/" className="flex items-center gap-2 transition-opacity hover:opacity-90">
-             <span className="text-xl font-bold tracking-tight text-white">BajuNow</span>
+             <span className="text-xl font-bold tracking-tight text-white">FlyCloth</span>
           </Link>
           <div className="flex items-center gap-4">
             {!hasEnvVars ? <EnvVarWarning /> : <Suspense><AuthButton /></Suspense>}
@@ -48,7 +48,7 @@ export default function Home() {
       {/* Minimalist Footer */}
       <footer className="w-full border-t bg-background/50 backdrop-blur-sm py-8 mt-auto">
         <div className="container mx-auto flex flex-col sm:flex-row items-center justify-between px-4 gap-4">
-          <p className="text-sm text-muted-foreground">© 2025 BajuNow — All rights reserved</p>
+          <p className="text-sm text-muted-foreground">© 2025 FlyCloth — All rights reserved</p>
           <div className="flex items-center gap-6">
             <a className="text-sm text-muted-foreground hover:text-foreground transition-colors" href="#">Instagram</a>
             <a className="text-sm text-muted-foreground hover:text-foreground transition-colors" href="#">Twitter</a>
