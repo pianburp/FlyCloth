@@ -1,5 +1,5 @@
 -- =============================================
--- BajuNow: Admin User Management
+-- FlyCloth: Admin User Management
 -- =============================================
 
 -- List all users

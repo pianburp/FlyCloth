@@ -322,7 +322,7 @@ export default function AddProductClient() {
                   id="brand" 
                   value={formData.brand}
                   onChange={handleInputChange}
-                  placeholder="e.g., BajuNow Original"
+                  placeholder="e.g., FlyCloth Original"
                   className="w-full"
                 />
               </div>

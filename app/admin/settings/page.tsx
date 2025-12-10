@@ -19,7 +19,7 @@ export default async function SettingsPage() {
       <div>
         <h1 className="text-2xl sm:text-3xl font-bold mb-2">Store Settings</h1>
         <p className="text-sm sm:text-base text-muted-foreground">
-          Configure your BajuNow store settings
+          Configure your FlyCloth store settings
         </p>
       </div>
 
@@ -33,11 +33,11 @@ export default async function SettingsPage() {
             <form className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="store-name">Store Name</Label>
-                <Input id="store-name" defaultValue="BajuNow" />
+                <Input id="store-name" defaultValue="FlyCloth" />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="store-email">Store Email</Label>
-                <Input id="store-email" type="email" defaultValue="contact@bajunow.com" />
+                <Input id="store-email" type="email" defaultValue="contact@flycloth.com" />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="store-phone">Phone Number</Label>

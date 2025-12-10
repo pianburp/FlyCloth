@@ -1,6 +1,7 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import { hasEnvVars } from "../utils";
+import { redis, CACHE_KEYS, CACHE_TTL } from "../redis";
 
 export async function updateSession(request: NextRequest) {
   let supabaseResponse = NextResponse.next({
@@ -61,13 +62,46 @@ export async function updateSession(request: NextRequest) {
 
   // If user is authenticated, check role-based access
   if (user) {
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("role")
-      .eq("id", user.id)
-      .single();
-    
-    const userRole = profile?.role || "user";
+    let userRole: string = "user";
+
+    // Try to get role from Redis cache first
+    if (redis) {
+      try {
+        const cachedRole = await redis.get<string>(CACHE_KEYS.USER_ROLE(user.id));
+        if (cachedRole) {
+          userRole = cachedRole;
+        } else {
+          // Fetch from database
+          const { data: profile } = await supabase
+            .from("profiles")
+            .select("role")
+            .eq("id", user.id)
+            .single();
+          
+          userRole = profile?.role || "user";
+          
+          // Cache the role (fire and forget)
+          redis.set(CACHE_KEYS.USER_ROLE(user.id), userRole, { ex: CACHE_TTL.USER_ROLE }).catch(console.error);
+        }
+      } catch (error) {
+        console.error("Redis error in middleware:", error);
+        // Fallback to database
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("role")
+          .eq("id", user.id)
+          .single();
+        userRole = profile?.role || "user";
+      }
+    } else {
+      // No Redis, fetch directly from database
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("role")
+        .eq("id", user.id)
+        .single();
+      userRole = profile?.role || "user";
+    }
 
     // Admin routes - only accessible to admins
     if (path.startsWith("/admin")) {

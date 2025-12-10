@@ -29,7 +29,7 @@ export default async function EditProductPage({ params }: { params: Promise<{ id
     stock: 45,
     description: "High-quality cotton t-shirt with a comfortable fit. Perfect for casual wear.",
     category: "casual",
-    brand: "BajuNow Original",
+    brand: "FlyCloth Original",
     sizes: ['S', 'M', 'L', 'XL'],
     colors: ['White', 'Black', 'Navy']
   };

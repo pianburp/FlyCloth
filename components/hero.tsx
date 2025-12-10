@@ -1,11 +1,14 @@
+"use client";
+
 import Link from "next/link";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
-import { Card, CardTitle, CardContent } from "@/components/ui/card";
+import { motion } from "framer-motion";
+import { ChevronDown } from "lucide-react";
 
 export function Hero() {
   return (
-    <section className="relative w-full h-screen flex items-center overflow-hidden bg-neutral-900">
+    <section className="relative w-full min-h-screen flex items-center justify-center overflow-hidden bg-black">
       {/* Background Video */}
       <video
         autoPlay
@@ -19,50 +22,85 @@ export function Hero() {
         Your browser does not support the video tag.
       </video>
 
-      {/* Overlay */}
-      <div className="absolute inset-0 bg-black/50 z-[1]" />
+      {/* Gradient Overlays */}
+      <div className="absolute inset-0 bg-black/60 z-[1]" />
+      <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-transparent to-black/80 z-[2]" />
 
-      <div className="relative z-10 container mx-auto px-4 flex flex-col-reverse lg:flex-row items-center gap-8 lg:gap-12">
-        <div className="flex-1 text-center lg:text-left text-white fade-in-up">
-          <h1 className="text-4xl sm:text-5xl font-extrabold tracking-tight leading-tight">
-            FlyCloth — Modern, Comfortable Clothing
-          </h1>
-          <p className="mt-4 text-lg text-gray-200 max-w-xl mx-auto lg:mx-0">
-            Discover high quality apparel for every season. Crafted from premium
-            fabrics with sustainability in mind.
-          </p>
-          <div className="mt-6 flex items-center justify-center lg:justify-start gap-3">
-            <Button asChild className="bg-white text-black hover:bg-gray-200">
-              <Link href="/shop" className="inline-flex">Shop Now</Link>
-            </Button>
-            <Button asChild variant="outline" className="bg-transparent text-white border-white hover:bg-white/20 hover:text-white">
-              <Link href="/collections">View Collections</Link>
-            </Button>
-          </div>
-        </div>
+      {/* Decorative Elements */}
+      <div className="absolute top-1/4 left-10 w-px h-32 bg-gradient-to-b from-transparent via-white/20 to-transparent z-10 hidden lg:block" />
+      <div className="absolute top-1/3 right-10 w-px h-48 bg-gradient-to-b from-transparent via-white/20 to-transparent z-10 hidden lg:block" />
 
-        <div className="hidden lg:flex flex-1 justify-end">
-          <Card className="w-full max-w-md overflow-hidden fade-in-up fade-in-up-delayed-1 bg-white/10 border-white/20 backdrop-blur-sm">
-            <div className="relative aspect-[4/3] w-full rounded-md overflow-hidden flex items-end">
-              <Image 
-                src="/images/baju.jpg" 
-                alt="Summer Linen Shirt" 
-                fill 
-                className="object-cover"
-                priority
-              />
-              {/* Gradient overlay for improved contrast */}
-              <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
+      {/* Main Content */}
+      <div className="relative z-10 container mx-auto px-6 lg:px-12 flex flex-col items-center text-center">
+        {/* Season Tag */}
+        <motion.p
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8, delay: 0.2 }}
+          className="text-xs tracking-luxury uppercase text-white/70 mb-6"
+        >
+          Winter Collection 2025
+        </motion.p>
 
-              <CardContent className="p-6 text-white relative z-10">
-                <CardTitle className="text-xl">Summer Linen Shirt</CardTitle>
-                <p className="text-sm mt-1">Lightweight. Breathable. Timeless.</p>
-                <div className="mt-4 text-sm font-semibold">RM49.00</div>
-              </CardContent>
-            </div>
-          </Card>
-        </div>
+        {/* Main Heading */}
+        <motion.h1
+          initial={{ opacity: 0, y: 30 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 1, delay: 0.4 }}
+          className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-light tracking-tight leading-[0.95] text-white mb-6"
+        >
+          <span className="block">Timeless</span>
+          <span className="block font-medium italic">Elegance</span>
+        </motion.h1>
+
+        {/* Subtitle */}
+        <motion.p
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8, delay: 0.6 }}
+          className="max-w-xl text-sm sm:text-base text-white/70 font-light leading-relaxed mb-10"
+        >
+          Discover the art of haute couture where every stitch tells a story of
+          unparalleled craftsmanship and timeless sophistication.
+        </motion.p>
+
+        {/* CTA Buttons */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8, delay: 0.8 }}
+          className="flex flex-col sm:flex-row items-center gap-4"
+        >
+          <Button
+            asChild
+            className="bg-white text-black hover:bg-white/90 px-8 py-6 text-xs tracking-luxury uppercase font-medium transition-all duration-300"
+          >
+            <Link href="/shop">Explore Collection</Link>
+          </Button>
+          <Button
+            asChild
+            variant="ghost"
+            className="text-white border border-white/30 hover:bg-white/10 hover:text-white px-8 py-6 text-xs tracking-luxury uppercase font-medium transition-all duration-300"
+          >
+            <Link href="/lookbook">View Lookbook</Link>
+          </Button>
+        </motion.div>
       </div>
+
+      {/* Scroll Indicator */}
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 1, delay: 1.5 }}
+        className="absolute bottom-8 left-1/2 -translate-x-1/2 z-10"
+      >
+        <motion.div
+          animate={{ y: [0, 8, 0] }}
+          transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
+        >
+          <ChevronDown className="w-5 h-5 text-white/40" />
+        </motion.div>
+      </motion.div>
     </section>
   );
 }

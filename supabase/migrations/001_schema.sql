@@ -1,5 +1,5 @@
 -- =============================================
--- BajuNow Database Schema
+-- FlyCloth Database Schema
 -- Single migration file for clean setup
 -- =============================================
 

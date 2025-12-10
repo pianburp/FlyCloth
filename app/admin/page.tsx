@@ -61,7 +61,7 @@ export default async function AdminDashboard() {
       <div>
         <h1 className="text-2xl sm:text-3xl font-bold mb-2">Admin Dashboard</h1>
         <p className="text-sm sm:text-base text-muted-foreground">
-          Welcome back, {profile?.full_name} - Manage your BajuNow store
+          Welcome back, {profile?.full_name} - Manage your FlyCloth store
         </p>
       </div>
 
