@@ -32,15 +32,6 @@ export function Hero() {
 
       {/* Main Content */}
       <div className="relative z-10 container mx-auto px-6 lg:px-12 flex flex-col items-center text-center">
-        {/* Season Tag */}
-        <motion.p
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8, delay: 0.2 }}
-          className="text-xs tracking-luxury uppercase text-white/70 mb-6"
-        >
-          Winter Collection 2025
-        </motion.p>
 
         {/* Main Heading */}
         <motion.h1
