@@ -2,10 +2,10 @@ import { AuthButton } from "@/components/auth";
 import { AppSidebar } from "@/components/layout/app-sidebar";
 import { ThemeSwitcher } from "@/components/layout";
 import { SidebarProvider, SidebarTrigger, SidebarInset } from "@/components/ui/sidebar";
-import { Badge } from "@/components/ui/badge";
 import Link from "next/link";
 import { Suspense } from "react";
 import { getCachedUserProfile } from "@/lib/rbac";
+import { AdminPageSkeleton } from "@/components/shared";
 
 export default async function AdminLayout({
   children,
@@ -39,7 +39,7 @@ export default async function AdminLayout({
           </div>
         </header>
         <div className="flex-1 w-full max-w-7xl mx-auto p-5">
-          <Suspense fallback={<div>Loading...</div>}>
+          <Suspense fallback={<AdminPageSkeleton />}>
             {children}
           </Suspense>
         </div>
@@ -50,3 +50,4 @@ export default async function AdminLayout({
     </SidebarProvider>
   );
 }
+

@@ -5,6 +5,7 @@ import { SidebarProvider, SidebarTrigger, SidebarInset } from "@/components/ui/s
 import Link from "next/link";
 import { Suspense } from "react";
 import { getCachedUserProfile } from "@/lib/rbac";
+import { PageSkeleton } from "@/components/shared";
 
 export default async function UserLayout({
   children,
@@ -38,7 +39,7 @@ export default async function UserLayout({
           </div>
         </header>
         <div className="flex-1 w-full max-w-7xl mx-auto p-5">
-          <Suspense fallback={<div>Loading...</div>}>
+          <Suspense fallback={<PageSkeleton />}>
             {children}
           </Suspense>
         </div>
@@ -49,3 +50,4 @@ export default async function UserLayout({
     </SidebarProvider>
   );
 }
+

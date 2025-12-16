@@ -3,11 +3,12 @@
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { Badge } from "@/components/ui/badge";
-import { ShirtIcon, Star, ArrowUpRight, Sparkles } from "lucide-react";
+import { ShirtIcon, Star, ArrowUpRight } from "lucide-react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 import { ProductFilters } from "@/components/product";
+import { PageSkeleton } from "@/components/shared";
 
 interface Product {
   id: string;
@@ -81,16 +82,7 @@ export default function UserDashboard() {
   }, []);
 
   if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <motion.div
-          animate={{ rotate: 360 }}
-          transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-        >
-          <Sparkles className="w-8 h-8 text-primary" />
-        </motion.div>
-      </div>
-    );
+    return <PageSkeleton />;
   }
 
   return (
