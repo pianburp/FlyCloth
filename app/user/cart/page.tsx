@@ -1,12 +1,12 @@
-import { getUserProfile } from "@/lib/rbac";
+import { getCachedUserProfile } from "@/lib/rbac";
 import { redirect } from "next/navigation";
-import { CartManagement } from "@/components/cart-management";
+import { CartManagement } from "@/components/cart";
 import { createClient } from "@/lib/supabase/server";
 
 export const dynamic = 'force-dynamic';
 
 export default async function CartPage() {
-  const profile = await getUserProfile();
+  const profile = await getCachedUserProfile();
 
   if (!profile) {
     redirect("/auth/login");
@@ -46,9 +46,9 @@ export default async function CartPage() {
     // Sort images to prioritize primary, then others
     const images = product.product_images || [];
     const primaryImage = images.find((img: any) => img.is_primary) || images[0];
-    
-    const imageUrl = primaryImage 
-      ? supabase.storage.from('product-images').getPublicUrl(primaryImage.storage_path).data.publicUrl 
+
+    const imageUrl = primaryImage
+      ? supabase.storage.from('product-images').getPublicUrl(primaryImage.storage_path).data.publicUrl
       : null;
 
     return {

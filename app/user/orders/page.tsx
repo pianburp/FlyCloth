@@ -1,4 +1,4 @@
-import { getUserProfile } from "@/lib/rbac";
+import { getCachedUserProfile } from "@/lib/rbac";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -23,7 +23,7 @@ function getStatusVariant(status: string) {
 }
 
 export default async function OrdersPage() {
-  const profile = await getUserProfile();
+  const profile = await getCachedUserProfile();
 
   if (!profile) {
     redirect("/auth/login");

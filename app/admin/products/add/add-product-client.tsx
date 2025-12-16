@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { ArrowLeft, Upload, Save, X, Loader2 } from "lucide-react";
+import { ArrowLeft, Upload, Save, X, Loader2, Zap } from "lucide-react";
 import Link from "next/link";
 import { useState, useCallback, useEffect, useMemo } from "react";
 import { createClient } from "@/lib/supabase/client";
@@ -26,7 +26,7 @@ export default function AddProductClient() {
   const supabase = useMemo(() => createClient(), []);
   const [loading, setLoading] = useState(false);
   const [categories, setCategories] = useState<any[]>([]);
-  
+
   // Form State
   const [formData, setFormData] = useState({
     name: "",
@@ -37,13 +37,14 @@ export default function AddProductClient() {
     categoryId: "",
     brand: "",
   });
-  
+
   const [selectedSizes, setSelectedSizes] = useState<string[]>([]);
   const [selectedColors, setSelectedColors] = useState<string[]>([]); // Store color names
 
   const [dragActive, setDragActive] = useState(false);
   const [files, setFiles] = useState<File[]>([]);
   const [previewUrls, setPreviewUrls] = useState<string[]>([]);
+  const [syncToStripe, setSyncToStripe] = useState(true); // Default to syncing
 
   useEffect(() => {
     const fetchCategories = async () => {
@@ -70,7 +71,7 @@ export default function AddProductClient() {
     if (e.dataTransfer.files && e.dataTransfer.files[0]) {
       const newFiles = Array.from(e.dataTransfer.files);
       setFiles((prev) => [...prev, ...newFiles]);
-      
+
       // Create preview URLs
       const newUrls = newFiles.map(file => URL.createObjectURL(file));
       setPreviewUrls((prev) => [...prev, ...newUrls]);
@@ -103,13 +104,13 @@ export default function AddProductClient() {
   };
 
   const toggleSize = (size: string) => {
-    setSelectedSizes(prev => 
+    setSelectedSizes(prev =>
       prev.includes(size) ? prev.filter(s => s !== size) : [...prev, size]
     );
   };
 
   const toggleColor = (colorName: string) => {
-    setSelectedColors(prev => 
+    setSelectedColors(prev =>
       prev.includes(colorName) ? prev.filter(c => c !== colorName) : [...prev, colorName]
     );
   };
@@ -208,6 +209,24 @@ export default function AddProductClient() {
 
       if (variantsError) throw variantsError;
 
+      // 4. Sync to Stripe if enabled
+      if (syncToStripe) {
+        try {
+          const syncResponse = await fetch('/api/stripe/sync-product', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ productId: product.id }),
+          });
+
+          if (!syncResponse.ok) {
+            console.warn('Failed to sync product to Stripe, but product was created successfully');
+          }
+        } catch (syncError) {
+          console.warn('Failed to sync to Stripe:', syncError);
+          // Don't throw - product was created successfully, just not synced
+        }
+      }
+
       router.push('/admin/products');
       router.refresh();
     } catch (error: any) {
@@ -244,8 +263,8 @@ export default function AddProductClient() {
           <CardContent className="space-y-6">
             <div className="space-y-2">
               <Label htmlFor="name">Product Name</Label>
-              <Input 
-                id="name" 
+              <Input
+                id="name"
                 value={formData.name}
                 onChange={handleInputChange}
                 placeholder="e.g., Premium Cotton T-Shirt"
@@ -255,8 +274,8 @@ export default function AddProductClient() {
 
             <div className="space-y-2">
               <Label htmlFor="sku">SKU</Label>
-              <Input 
-                id="sku" 
+              <Input
+                id="sku"
                 value={formData.sku}
                 onChange={handleInputChange}
                 placeholder="e.g., SHIRT-001"
@@ -267,8 +286,8 @@ export default function AddProductClient() {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="price">Price (RM)</Label>
-                <Input 
-                  id="price" 
+                <Input
+                  id="price"
                   type="number"
                   step="0.01"
                   value={formData.price}
@@ -279,8 +298,8 @@ export default function AddProductClient() {
               </div>
               <div className="space-y-2">
                 <Label htmlFor="stock">Stock Quantity (per variant)</Label>
-                <Input 
-                  id="stock" 
+                <Input
+                  id="stock"
                   type="number"
                   value={formData.stock}
                   onChange={handleInputChange}
@@ -292,7 +311,7 @@ export default function AddProductClient() {
 
             <div className="space-y-2">
               <Label htmlFor="description">Description</Label>
-              <textarea 
+              <textarea
                 id="description"
                 value={formData.description}
                 onChange={handleInputChange}
@@ -304,7 +323,7 @@ export default function AddProductClient() {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="categoryId">Category</Label>
-                <select 
+                <select
                   id="categoryId"
                   value={formData.categoryId}
                   onChange={handleInputChange}
@@ -318,8 +337,8 @@ export default function AddProductClient() {
               </div>
               <div className="space-y-2">
                 <Label htmlFor="brand">Brand</Label>
-                <Input 
-                  id="brand" 
+                <Input
+                  id="brand"
                   value={formData.brand}
                   onChange={handleInputChange}
                   placeholder="e.g., FlyCloth Original"
@@ -339,10 +358,9 @@ export default function AddProductClient() {
               <CardDescription>Upload product photos</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div 
-                className={`border-2 border-dashed rounded-lg p-4 sm:p-8 text-center transition-colors ${
-                  dragActive ? "border-primary bg-primary/5" : "border-muted-foreground/25"
-                }`}
+              <div
+                className={`border-2 border-dashed rounded-lg p-4 sm:p-8 text-center transition-colors ${dragActive ? "border-primary bg-primary/5" : "border-muted-foreground/25"
+                  }`}
                 onDragEnter={handleDrag}
                 onDragLeave={handleDrag}
                 onDragOver={handleDrag}
@@ -363,8 +381,8 @@ export default function AddProductClient() {
                   className="hidden"
                   onChange={handleChange}
                 />
-                <Button 
-                  variant="outline" 
+                <Button
+                  variant="outline"
                   className="mt-4"
                   onClick={() => document.getElementById('image-upload')?.click()}
                 >
@@ -391,6 +409,33 @@ export default function AddProductClient() {
             </CardContent>
           </Card>
 
+          {/* Stripe Integration */}
+          <Card className="border-blue-200 bg-blue-50/50">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Zap className="w-5 h-5 text-blue-600" />
+                Stripe Integration
+              </CardTitle>
+              <CardDescription>Sync this product with Stripe for payments</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <label className="flex items-center space-x-3 cursor-pointer">
+                <input
+                  type="checkbox"
+                  className="rounded w-5 h-5"
+                  checked={syncToStripe}
+                  onChange={(e) => setSyncToStripe(e.target.checked)}
+                />
+                <div>
+                  <span className="font-medium">Create in Stripe</span>
+                  <p className="text-sm text-muted-foreground">
+                    Automatically create a Stripe Product and Price for checkout
+                  </p>
+                </div>
+              </label>
+            </CardContent>
+          </Card>
+
           {/* Size & Color Variants */}
           <Card>
             <CardHeader>
@@ -403,9 +448,9 @@ export default function AddProductClient() {
                 <div className="flex flex-wrap gap-2">
                   {SIZES.map((size) => (
                     <label key={size} className="flex items-center space-x-2 cursor-pointer">
-                      <input 
-                        type="checkbox" 
-                        className="rounded" 
+                      <input
+                        type="checkbox"
+                        className="rounded"
                         checked={selectedSizes.includes(size)}
                         onChange={() => toggleSize(size)}
                       />
@@ -420,13 +465,13 @@ export default function AddProductClient() {
                 <div className="grid grid-cols-2 gap-2">
                   {COLORS.map((color) => (
                     <label key={color.name} className="flex items-center space-x-2 cursor-pointer">
-                      <input 
-                        type="checkbox" 
-                        className="rounded" 
+                      <input
+                        type="checkbox"
+                        className="rounded"
                         checked={selectedColors.includes(color.name)}
                         onChange={() => toggleColor(color.name)}
                       />
-                      <div 
+                      <div
                         className="w-4 h-4 rounded border"
                         style={{ backgroundColor: color.value }}
                       />

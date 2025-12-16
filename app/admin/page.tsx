@@ -1,4 +1,4 @@
-import { getUserProfile } from "@/lib/rbac";
+import { getCachedUserProfile } from "@/lib/rbac";
 import { createClient } from "@/lib/supabase/server";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { ShirtIcon, PackageIcon, DollarSignIcon, UsersIcon } from "lucide-react";
@@ -6,11 +6,11 @@ import { ShirtIcon, PackageIcon, DollarSignIcon, UsersIcon } from "lucide-react"
 export const dynamic = 'force-dynamic';
 
 export default async function AdminDashboard() {
-  const profile = await getUserProfile();
   const supabase = await createClient();
 
-  // Fetch dashboard data in parallel
+  // Fetch dashboard data in parallel (including profile)
   const [
+    profile,
     { count: productsCount },
     { count: ordersCount },
     { count: usersCount },
@@ -18,6 +18,7 @@ export default async function AdminDashboard() {
     { data: recentOrders },
     { data: allOrderItems }
   ] = await Promise.all([
+    getCachedUserProfile(),
     supabase.from("products").select("*", { count: "exact", head: true }),
     supabase.from("orders").select("*", { count: "exact", head: true }),
     supabase.from("profiles").select("*", { count: "exact", head: true }),
@@ -42,7 +43,7 @@ export default async function AdminDashboard() {
 
   // Calculate top products
   const productStats: Record<string, { sold: number; revenue: number }> = {};
-  
+
   allOrderItems?.forEach((item) => {
     if (!productStats[item.product_name]) {
       productStats[item.product_name] = { sold: 0, revenue: 0 };
@@ -140,7 +141,7 @@ export default async function AdminDashboard() {
                   <div>
                     <p className="font-medium text-sm sm:text-base">Order #{order.id.slice(0, 8)}</p>
                     <p className="text-xs sm:text-sm text-muted-foreground">
-                      {order.order_items && order.order_items.length > 0 
+                      {order.order_items && order.order_items.length > 0
                         ? `${order.order_items[0].product_name}${order.order_items.length > 1 ? ` +${order.order_items.length - 1} more` : ''}`
                         : 'No items'}
                     </p>

@@ -38,14 +38,6 @@ export default async function ProductPage({ params }: { params: Promise<{ id: st
 
   return (
     <div className="container mx-auto py-8 px-4">
-      <div className="mb-6">
-        <Link href="/user">
-          <Button variant="ghost" className="pl-0 hover:pl-0 hover:bg-transparent">
-            <ArrowLeft className="mr-2 h-4 w-4" />
-            Back to Products
-          </Button>
-        </Link>
-      </div>
       
       <ProductDetailsClient 
         product={product} 

@@ -1,16 +1,30 @@
-import { EnvVarWarning } from "@/components/env-var-warning";
-import { AuthButton } from "@/components/auth-button";
-import { ThemeSwitcher } from "@/components/theme-switcher";
+import { EnvVarWarning } from "@/components/shared";
+import { AuthButton } from "@/components/auth";
+import { ThemeSwitcher } from "@/components/layout";
 import { hasEnvVars } from "@/lib/utils";
 import Link from "next/link";
 import { Suspense } from "react";
-import { Hero } from "@/components/hero";
-import { Features } from "@/components/features";
-import { ContactUs } from "@/components/contact-us";
+import { Hero, Features, ContactUs } from "@/components/marketing";
 import { Menu, Search, ShoppingBag, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { RootLayoutWrapper } from "@/components/layout/root-layout-wrapper";
+import { getCachedUserProfile } from "@/lib/rbac";
 
-export default function Home() {
+export default async function Home() {
+  const profile = await getCachedUserProfile();
+
+  if (profile) {
+    return (
+      <RootLayoutWrapper>
+        <Hero />
+        <div className="flex flex-col">
+          <Features />
+          <ContactUs />
+        </div>
+      </RootLayoutWrapper>
+    );
+  }
+
   return (
     <main className="min-h-screen bg-background flex flex-col relative">
       {/* Luxury Navigation Bar */}
@@ -58,10 +72,6 @@ export default function Home() {
 
             {/* Right Navigation */}
             <div className="flex items-center gap-4 lg:gap-6">
-              <Button variant="ghost" size="icon" className="hidden sm:flex">
-                <Search className="w-4 h-4" />
-              </Button>
-
               {!hasEnvVars ? (
                 <EnvVarWarning />
               ) : (

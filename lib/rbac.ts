@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { cache } from "react";
 
 export type UserRole = "user" | "admin";
 
@@ -63,6 +64,13 @@ export async function getUserProfile(): Promise<UserProfile | null> {
     created_at: profile.created_at,
   };
 }
+
+/**
+ * Request-scoped memoized version of getUserProfile
+ * Uses React's cache() to deduplicate calls within the same request
+ * This prevents multiple DB calls when getUserProfile is called from multiple components
+ */
+export const getCachedUserProfile = cache(getUserProfile);
 
 /**
  * Check if the current user has a specific role

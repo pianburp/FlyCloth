@@ -1,13 +1,12 @@
-import { getUserProfile } from "@/lib/rbac";
+import { getCachedUserProfile } from "@/lib/rbac";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import PaymentClient from "./payment-client";
-import { getActiveCoupons } from "./actions";
 
 export const dynamic = 'force-dynamic';
 
 export default async function PaymentPage() {
-  const profile = await getUserProfile();
+  const profile = await getCachedUserProfile();
 
   if (!profile) {
     redirect("/auth/login");
@@ -40,14 +39,19 @@ export default async function PaymentPage() {
     console.error("Error fetching cart:", error);
   }
 
+  // If cart is empty, redirect to cart page
+  if (!cartData || cartData.length === 0) {
+    redirect("/user/cart");
+  }
+
   const cartItems = cartData?.map((item: any) => {
     const variant = item.product_variants;
     const product = variant.products;
     const images = product.product_images || [];
     const primaryImage = images.find((img: any) => img.is_primary) || images[0];
-    
-    const imageUrl = primaryImage 
-      ? supabase.storage.from('product-images').getPublicUrl(primaryImage.storage_path).data.publicUrl 
+
+    const imageUrl = primaryImage
+      ? supabase.storage.from('product-images').getPublicUrl(primaryImage.storage_path).data.publicUrl
       : null;
 
     return {
@@ -62,7 +66,5 @@ export default async function PaymentPage() {
     };
   }) || [];
 
-  const coupons = await getActiveCoupons();
-
-  return <PaymentClient cartItems={cartItems} userEmail={profile.email} initialCoupons={coupons} />;
+  return <PaymentClient cartItems={cartItems} userEmail={profile.email} />;
 }

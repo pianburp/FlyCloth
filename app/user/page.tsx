@@ -1,192 +1,324 @@
-import { getUserProfile } from "@/lib/rbac";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
+"use client";
+
+import { useEffect, useState } from "react";
+import { motion } from "framer-motion";
 import { Badge } from "@/components/ui/badge";
-import { ShirtIcon, Star } from "lucide-react";
+import { ShirtIcon, Star, ArrowUpRight, Sparkles } from "lucide-react";
 import Link from "next/link";
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
-import { ProductFilters } from "@/components/product-filters";
+import { ProductFilters } from "@/components/product";
 
-export const dynamic = 'force-dynamic';
+interface Product {
+  id: string;
+  name: string;
+  sku: string;
+  base_price: number;
+  product_images?: { storage_path: string }[];
+  product_variants?: { stock_quantity: number }[];
+}
 
-export default async function UserDashboard(props: {
-  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
-}) {
-  const searchParams = await props.searchParams;
-  const profile = await getUserProfile();
-  const supabase = await createClient();
+interface Category {
+  id: string;
+  name: string;
+}
 
-  // Fetch categories for filters
-  const { data: categories } = await supabase
-    .from('categories')
-    .select('id, name')
-    .order('name');
+interface Profile {
+  full_name: string;
+}
 
-  // Fetch featured products for the hero section
-  const { data: featuredProducts } = await supabase
-    .from('products')
-    .select('*, product_images(storage_path), product_variants(stock_quantity)')
-    .eq('featured', true)
-    .eq('is_active', true)
-    .limit(3);
+export default function UserDashboard() {
+  const [profile, setProfile] = useState<Profile | null>(null);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [featuredProducts, setFeaturedProducts] = useState<Product[]>([]);
+  const [allProducts, setAllProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  // Build query for all products
-  let query = supabase
-    .from('products')
-    .select('*, product_images(storage_path), product_variants(stock_quantity)')
-    .eq('is_active', true)
-    .order('created_at', { ascending: false });
+  useEffect(() => {
+    async function fetchData() {
+      const supabase = createClient();
 
-  // Apply filters
-  const categoryId = searchParams?.category as string;
-  const minPrice = searchParams?.minPrice as string;
-  const maxPrice = searchParams?.maxPrice as string;
+      // Get current user profile
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const { data: profileData } = await supabase
+          .from('profiles')
+          .select('full_name')
+          .eq('id', user.id)
+          .single();
+        setProfile(profileData);
+      }
 
-  if (categoryId && categoryId !== 'all') {
-    query = query.eq('category_id', categoryId);
+      // Fetch categories
+      const { data: categoriesData } = await supabase
+        .from('categories')
+        .select('*')
+        .order('name');
+      setCategories(categoriesData || []);
+
+      // Fetch featured products
+      const { data: featuredData } = await supabase
+        .from('products')
+        .select('*, product_images(storage_path), product_variants(stock_quantity)')
+        .eq('is_active', true)
+        .eq('is_featured', true)
+        .limit(3);
+      setFeaturedProducts(featuredData || []);
+
+      // Fetch all products
+      const { data: productsData } = await supabase
+        .from('products')
+        .select('*, product_images(storage_path), product_variants(stock_quantity)')
+        .eq('is_active', true)
+        .order('created_at', { ascending: false })
+        .limit(12);
+      setAllProducts(productsData || []);
+
+      setLoading(false);
+    }
+
+    fetchData();
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <motion.div
+          animate={{ rotate: 360 }}
+          transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+        >
+          <Sparkles className="w-8 h-8 text-primary" />
+        </motion.div>
+      </div>
+    );
   }
-
-  if (minPrice) {
-    query = query.gte('base_price', minPrice);
-  }
-
-  if (maxPrice) {
-    query = query.lte('base_price', maxPrice);
-  }
-
-  // Fetch all active products
-  const { data: allProducts } = await query.limit(12);
 
   return (
-    <div className="flex flex-col gap-10 pb-10">
-      {/* Hero Section */}
-      <div className="relative rounded-xl overflow-hidden min-h-[300px] sm:min-h-[400px] flex items-center">
+    <div className="flex flex-col pb-16">
+      {/* Luxury Hero Section */}
+      <section className="relative overflow-hidden min-h-[500px] sm:min-h-[600px] flex items-center bg-black -mx-4 sm:-mx-6 lg:-mx-8">
         {/* Background Video */}
         <video
           autoPlay
           loop
           muted
           playsInline
-          className="absolute inset-0 w-full h-full object-cover"
+          preload="auto"
+          className="absolute inset-0 w-full h-full object-cover z-0"
         >
           <source src="/video/hero-user.mp4" type="video/mp4" />
         </video>
-        
-        {/* Overlay */}
-        <div className="absolute inset-0 bg-black/60" />
+
+        {/* Gradient Overlays */}
+        <div className="absolute inset-0 bg-black/50 z-[1]" />
+        <div className="absolute inset-0 bg-gradient-to-b from-black/30 via-transparent to-black/70 z-[2]" />
+
+        {/* Decorative Elements */}
+        <div className="absolute top-1/4 left-6 w-px h-24 bg-gradient-to-b from-transparent via-white/20 to-transparent z-10 hidden lg:block" />
+        <div className="absolute top-1/3 right-6 w-px h-32 bg-gradient-to-b from-transparent via-white/20 to-transparent z-10 hidden lg:block" />
 
         {/* Content */}
-        <div className="relative z-10 p-6 sm:p-8 md:p-12 flex flex-col md:flex-row items-center justify-between gap-6 sm:gap-8 w-full">
-          <div className="space-y-3 sm:space-y-4 max-w-xl">
-            <Badge className="mb-2 bg-white/20 text-white hover:bg-white/30 border-none text-xs sm:text-sm">New Collection</Badge>
-            <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold tracking-tight text-white">
-              Premium Shirts for Every Occasion
-            </h1>
-            <p className="text-sm sm:text-lg text-gray-200">
-              Welcome back, {profile?.full_name}. Discover our latest arrivals and timeless classics designed for comfort and style.
-            </p>
-            <Button size="lg" variant="secondary" asChild className="font-semibold w-full sm:w-auto">
-              <Link href="#products">Shop Now</Link>
+        <div className="relative z-10 container mx-auto px-6 lg:px-12 flex flex-col items-center text-center">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8, delay: 0.2 }}
+          >
+            <Badge className="mb-6 bg-white/10 text-white hover:bg-white/20 border border-white/20 backdrop-blur-sm text-xs tracking-luxury uppercase px-4 py-1.5">
+              Welcome Back
+            </Badge>
+          </motion.div>
+
+          <motion.h1
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 1, delay: 0.4 }}
+            className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-light tracking-tight leading-[0.95] text-white mb-4"
+          >
+            <span className="block">Hello,</span>
+            <span className="block font-medium italic">{profile?.full_name || "Valued Customer"}</span>
+          </motion.h1>
+
+          <motion.p
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8, delay: 0.6 }}
+            className="max-w-xl text-sm sm:text-base text-white/70 font-light leading-relaxed mb-8"
+          >
+            Discover our curated collection of premium garments, crafted with
+            unparalleled attention to detail for the discerning individual.
+          </motion.p>
+
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8, delay: 0.8 }}
+            className="flex flex-col sm:flex-row items-center gap-4"
+          >
+            <Button
+              asChild
+              className="bg-white text-black hover:bg-white/90 px-8 py-6 text-xs tracking-luxury uppercase font-medium transition-all duration-300"
+            >
+              <Link href="#products">Explore Collection</Link>
             </Button>
-          </div>
+            <Button
+              asChild
+              variant="ghost"
+              className="text-white border border-white/30 hover:bg-white/10 hover:text-white px-8 py-6 text-xs tracking-luxury uppercase font-medium transition-all duration-300"
+            >
+              <Link href="#featured">Featured Pieces</Link>
+            </Button>
+          </motion.div>
         </div>
-      </div>
+      </section>
 
       {/* Featured Section */}
       {featuredProducts && featuredProducts.length > 0 && (
-        <div className="space-y-4 sm:space-y-6">
-          <div className="flex items-center justify-between">
-            <h2 className="text-xl sm:text-2xl font-bold flex items-center gap-2">
-              <Star className="w-4 h-4 sm:w-5 sm:h-5 text-yellow-500 fill-yellow-500" />
-              Featured Products
-            </h2>
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 sm:gap-6">
-            {featuredProducts.map(product => (
-              <ProductCard key={product.id} product={product} supabase={supabase} featured />
+        <section id="featured" className="py-24 scroll-mt-8">
+          <motion.div
+            initial={{ opacity: 0, y: 40 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.8 }}
+            className="flex flex-col md:flex-row justify-between items-start md:items-end mb-12 gap-6"
+          >
+            <div className="max-w-2xl">
+              <p className="text-xs tracking-luxury uppercase text-muted-foreground mb-4 flex items-center gap-2">
+                <Star className="w-3 h-3 text-yellow-500 fill-yellow-500" />
+                Featured Collection
+              </p>
+              <h2 className="text-3xl md:text-4xl lg:text-5xl font-light tracking-tight leading-tight">
+                Handpicked for
+                <span className="block italic font-medium">Excellence</span>
+              </h2>
+            </div>
+            <Link
+              href="/user/products"
+              className="group flex items-center gap-2 text-sm tracking-luxury uppercase text-muted-foreground hover:text-foreground transition-colors duration-300"
+            >
+              View All
+              <ArrowUpRight className="w-4 h-4 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform duration-300" />
+            </Link>
+          </motion.div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8">
+            {featuredProducts.map((product, idx) => (
+              <LuxuryProductCard key={product.id} product={product} index={idx} featured />
             ))}
           </div>
-        </div>
+        </section>
       )}
 
       {/* All Products Section */}
-      <div id="products" className="space-y-4 sm:space-y-6">
-        <div className="flex flex-col gap-3 sm:gap-4">
-          <h2 className="text-xl sm:text-2xl font-bold">All Products</h2>
-          <ProductFilters categories={categories || []} />
-        </div>
-        <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6">
-          {allProducts?.map((product) => (
-            <ProductCard key={product.id} product={product} supabase={supabase} />
+      <section id="products" className="py-16 scroll-mt-8">
+        <motion.div
+          initial={{ opacity: 0, y: 40 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.8 }}
+          className="text-center mb-12"
+        >
+          <p className="text-xs tracking-luxury uppercase text-muted-foreground mb-4">
+            Shop by Style
+          </p>
+          <h2 className="text-3xl md:text-4xl font-light tracking-tight mb-8">
+            Explore Our Collection
+          </h2>
+          <div className="flex justify-center">
+            <ProductFilters categories={categories || []} />
+          </div>
+        </motion.div>
+
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6">
+          {allProducts?.map((product, idx) => (
+            <LuxuryProductCard key={product.id} product={product} index={idx} />
           ))}
-          
+
           {(!allProducts || allProducts.length === 0) && (
-            <div className="col-span-full text-center py-12 text-muted-foreground bg-muted/30 rounded-lg">
-              <ShirtIcon className="w-12 h-12 mx-auto mb-4 opacity-50" />
-              <p>No products available at the moment.</p>
-            </div>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              className="col-span-full text-center py-20"
+            >
+              <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-muted/50 flex items-center justify-center">
+                <ShirtIcon className="w-10 h-10 text-muted-foreground/50" />
+              </div>
+              <p className="text-muted-foreground font-light">No products available at the moment.</p>
+            </motion.div>
           )}
         </div>
-      </div>
+      </section>
     </div>
   );
 }
 
-function ProductCard({ product, supabase, featured = false }: { product: any, supabase: any, featured?: boolean }) {
+function LuxuryProductCard({ product, index, featured = false }: { product: Product, index: number, featured?: boolean }) {
+  const supabase = createClient();
   const imagePath = product.product_images?.[0]?.storage_path;
-  const imageUrl = imagePath 
-    ? supabase.storage.from('product-images').getPublicUrl(imagePath).data.publicUrl 
+  const imageUrl = imagePath
+    ? supabase.storage.from('product-images').getPublicUrl(imagePath).data.publicUrl
     : null;
 
-  const isLowStock = product.product_variants?.some((v: any) => v.stock_quantity < 25);
+  const isLowStock = product.product_variants?.some((v) => v.stock_quantity < 25);
 
   return (
-    <Card className={`flex flex-col h-full group overflow-hidden border-muted transition-all duration-300 hover:shadow-lg ${featured ? 'border-primary/20 bg-primary/5' : ''}`}>
-      <div className="relative aspect-[4/5] bg-muted overflow-hidden">
-        {imageUrl ? (
-          <img 
-            src={imageUrl} 
-            alt={product.name} 
-            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-          />
-        ) : (
-          <div className="w-full h-full flex items-center justify-center bg-secondary">
-            <ShirtIcon className="w-16 h-16 text-muted-foreground/50" />
+    <motion.div
+      initial={{ opacity: 0, y: 60 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true }}
+      transition={{ duration: 0.8, delay: index * 0.1 }}
+    >
+      <Link href={`/user/products/${product.id}`} className="group block">
+        <div className={`relative overflow-hidden bg-muted mb-4 ${featured ? 'aspect-[3/4]' : 'aspect-square'}`}>
+          {imageUrl ? (
+            <img
+              src={imageUrl}
+              alt={product.name}
+              className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+            />
+          ) : (
+            <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-muted to-muted/50">
+              <ShirtIcon className="w-12 h-12 text-muted-foreground/30" />
+            </div>
+          )}
+
+          {/* Overlay on hover */}
+          <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors duration-500" />
+
+          {/* Badges */}
+          <div className="absolute top-3 left-3 right-3 flex justify-between">
+            {featured && (
+              <Badge className="bg-black/80 text-white border-none backdrop-blur-sm text-[10px] tracking-luxury uppercase">
+                Featured
+              </Badge>
+            )}
+            {isLowStock && (
+              <Badge className="bg-amber-500/90 text-white border-none backdrop-blur-sm text-[10px] tracking-luxury uppercase ml-auto">
+                Limited
+              </Badge>
+            )}
           </div>
-        )}
-        {featured && (
-          <Badge className="absolute top-3 right-3 bg-yellow-500 hover:bg-yellow-600 text-white border-none">
-            Featured
-          </Badge>
-        )}
-        {isLowStock && (
-          <Badge className={`absolute top-3 ${featured ? 'left-3' : 'right-3'} bg-orange-500 hover:bg-orange-600 text-white border-none`}>
-            Low Stock
-          </Badge>
-        )}
-      </div>
-      
-      <CardHeader className="p-4 pb-2">
-        <CardTitle className="line-clamp-1 text-lg">{product.name}</CardTitle>
-        <CardDescription className="line-clamp-1 text-xs mt-1">
-          {product.sku}
-        </CardDescription>
-      </CardHeader>
-      
-      <CardContent className="p-4 pt-0 flex-grow">
-        <p className="font-bold text-xl text-primary mt-2">RM{product.base_price}</p>
-      </CardContent>
-      
-      <CardFooter className="p-4 pt-0">
-        <Link href={`/user/products/${product.id}`} className="w-full">
-          <Button 
-            className="w-full group-hover:bg-primary group-hover:text-primary-foreground transition-colors" 
-            variant={featured ? "default" : "secondary"}
-          >
-            View Details
-          </Button>
-        </Link>
-      </CardFooter>
-    </Card>
+
+          {/* Quick View */}
+          <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-500">
+            <span className="bg-white text-black px-6 py-3 text-xs tracking-luxury uppercase transform translate-y-4 group-hover:translate-y-0 transition-transform duration-500">
+              View Details
+            </span>
+          </div>
+        </div>
+
+        <div className="space-y-1.5">
+          <p className="text-[10px] tracking-luxury uppercase text-muted-foreground">
+            {product.sku}
+          </p>
+          <h3 className="text-sm font-light tracking-tight group-hover:text-muted-foreground transition-colors duration-300 line-clamp-1">
+            {product.name}
+          </h3>
+          <p className="text-sm font-medium">
+            RM {product.base_price.toLocaleString()}
+          </p>
+        </div>
+      </Link>
+    </motion.div>
   );
 }
