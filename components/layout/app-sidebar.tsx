@@ -23,6 +23,8 @@ import {
     FileText,
     Home,
     User,
+    Layers,
+    Scissors,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { useEffect, useState, useMemo } from "react";
@@ -30,6 +32,8 @@ import { useEffect, useState, useMemo } from "react";
 // Navigation items for guests (not logged in)
 const guestNavItems = [
     { title: "Home", href: "/", icon: Home },
+    { title: "Collections", href: "/shop", icon: Layers },
+    { title: "Custom Tailored", href: "/custom-tailored", icon: Scissors },
     { title: "Browse Shirts", href: "/user", icon: Shirt },
 ];
 
@@ -119,11 +123,27 @@ export function AppSidebar({ initialUser }: AppSidebarProps) {
     const isAdmin = userRole === "admin";
 
     return (
-        <Sidebar collapsible="icon">
+        <Sidebar collapsible="icon" className="border-r-0">
+            {/* Luxury Sidebar Header */}
+            <div className="relative px-4 py-5 border-b border-sidebar-border">
+                <Link href="/" className="flex items-center gap-2 group-data-[collapsible=icon]:justify-center">
+                    <span className="text-lg font-light tracking-tight group-data-[collapsible=icon]:hidden">
+                        FlyCloth
+                    </span>
+                    <span className="text-lg font-light tracking-tight hidden group-data-[collapsible=icon]:block">
+                        FC
+                    </span>
+                </Link>
+                {/* Gold accent line */}
+                <div className="absolute bottom-0 left-4 right-4 h-px bg-gradient-to-r from-transparent via-[hsl(38,50%,55%,0.4)] to-transparent group-data-[collapsible=icon]:left-2 group-data-[collapsible=icon]:right-2" />
+            </div>
+
             <SidebarContent>
                 {/* Main Navigation */}
                 <SidebarGroup>
-                    <SidebarGroupLabel>Navigation</SidebarGroupLabel>
+                    <SidebarGroupLabel className="text-[10px] tracking-luxury uppercase text-sidebar-foreground/60 font-medium">
+                        Navigation
+                    </SidebarGroupLabel>
                     <SidebarGroupContent>
                         <SidebarMenu>
                             {(user ? userNavItems : guestNavItems).map((item) => (
@@ -147,9 +167,11 @@ export function AppSidebar({ initialUser }: AppSidebarProps) {
                 {/* Admin Navigation */}
                 {isAdmin && (
                     <>
-                        <SidebarSeparator />
+                        <SidebarSeparator className="bg-gradient-to-r from-transparent via-sidebar-border to-transparent" />
                         <SidebarGroup>
-                            <SidebarGroupLabel>Admin</SidebarGroupLabel>
+                            <SidebarGroupLabel className="text-[10px] tracking-luxury uppercase text-[hsl(38,50%,55%)] font-medium">
+                                Admin
+                            </SidebarGroupLabel>
                             <SidebarGroupContent>
                                 <SidebarMenu>
                                     {adminNavItems.map((item) => (
@@ -173,8 +195,11 @@ export function AppSidebar({ initialUser }: AppSidebarProps) {
                 )}
             </SidebarContent>
 
-            <SidebarFooter>
-                <SidebarMenu>
+            {/* Luxury Footer */}
+            <SidebarFooter className="border-t border-sidebar-border relative">
+                {/* Gold accent line */}
+                <div className="absolute top-0 left-4 right-4 h-px bg-gradient-to-r from-transparent via-[hsl(38,50%,55%,0.3)] to-transparent" />
+                <SidebarMenu className="py-3">
                     <SidebarMenuItem>
                         <SidebarMenuButton
                             tooltip={
@@ -184,14 +209,17 @@ export function AppSidebar({ initialUser }: AppSidebarProps) {
                                         ? user.email
                                         : "Not signed in"
                             }
+                            className="transition-all duration-300 hover:bg-sidebar-accent rounded-none px-3 py-2.5"
                         >
-                            <User className="h-4 w-4" />
-                            <span className="truncate">
+                            <div className="w-7 h-7 rounded-full bg-sidebar-accent flex items-center justify-center flex-shrink-0">
+                                <User className="h-3.5 w-3.5 text-sidebar-foreground/70" />
+                            </div>
+                            <span className="text-sm font-light truncate">
                                 {isLoading
                                     ? "Loading..."
                                     : user
                                         ? user.email
-                                        : "Not signed in"}
+                                        : "Guest"}
                             </span>
                         </SidebarMenuButton>
                     </SidebarMenuItem>

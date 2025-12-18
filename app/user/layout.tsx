@@ -25,8 +25,8 @@ export default async function UserLayout({
       <AppSidebar initialUser={initialUser} />
       <SidebarInset>
         {/* Luxury Header */}
-        <header className="w-full flex justify-between items-center h-16 px-4 sm:px-6 lg:px-8 sticky top-0 bg-background/95 backdrop-blur-md z-10 border-b border-border/40">
-          <div className="flex items-center gap-4">
+        <header className="w-full flex justify-between items-center h-14 sm:h-16 px-2 sm:px-4 md:px-6 lg:px-8 sticky top-0 bg-background/95 backdrop-blur-md z-10 border-b border-border/40">
+          <div className="flex items-center gap-2 sm:gap-4">
             <SidebarTrigger className="-ml-1" />
             <Link
               href="/user"
@@ -34,8 +34,15 @@ export default async function UserLayout({
             >
               <span className="text-lg font-light tracking-tight">FlyCloth</span>
             </Link>
+            {/* Mobile logo */}
+            <Link
+              href="/user"
+              className="sm:hidden flex items-center transition-opacity hover:opacity-80"
+            >
+              <span className="text-base font-light tracking-tight">FlyCloth</span>
+            </Link>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-1 sm:gap-2 md:gap-3">
             <Suspense>
               <AuthButton />
             </Suspense>

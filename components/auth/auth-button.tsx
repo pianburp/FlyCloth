@@ -65,14 +65,23 @@ export function AuthButton() {
   // Not logged in - show Sign In and Register buttons
   if (!user) {
     return (
-      <div className="flex items-center gap-2">
-        <Button size="sm" variant="ghost" asChild>
+      <div className="flex items-center gap-1 sm:gap-2">
+        {/* Mobile: Icon-only sign in button */}
+        <Button size="icon" variant="ghost" asChild className="sm:hidden h-8 w-8">
+          <Link href="/auth/login">
+            <LogIn className="w-4 h-4" />
+            <span className="sr-only">Sign In</span>
+          </Link>
+        </Button>
+
+        {/* Desktop: Full buttons with text */}
+        <Button size="sm" variant="ghost" asChild className="hidden sm:inline-flex">
           <Link href="/auth/login">
             <LogIn className="w-4 h-4 mr-2" />
             Sign In
           </Link>
         </Button>
-        <Button size="sm" variant="default" asChild>
+        <Button size="sm" variant="default" asChild className="hidden sm:inline-flex">
           <Link href="/auth/sign-up">
             <UserPlus className="w-4 h-4 mr-2" />
             Register
@@ -84,17 +93,27 @@ export function AuthButton() {
 
   // Logged in - show user info and logout button
   return (
-    <div className="flex items-center gap-3">
+    <div className="flex items-center gap-1 sm:gap-2">
+      {/* Desktop: Show full user info */}
       <div className="hidden sm:flex items-center gap-2">
-        <span className="text-sm text-muted-foreground">
+        <span className="text-sm text-muted-foreground truncate max-w-[150px]">
           {user.user_metadata?.display_name || user.email}
         </span>
         <Badge variant={userRole === "admin" ? "destructive" : "secondary"} className="text-xs">
           {userRole === "admin" ? "Admin" : "User"}
         </Badge>
       </div>
-      <Button size="sm" variant="ghost" onClick={handleLogout}>
+
+      {/* Mobile: Icon-only logout button */}
+      <Button size="icon" variant="ghost" onClick={handleLogout} className="sm:hidden h-8 w-8">
+        <LogOut className="w-4 h-4 text-muted-foreground" />
+        <span className="sr-only">Logout</span>
+      </Button>
+
+      {/* Desktop: Full logout button with text */}
+      <Button size="sm" variant="ghost" onClick={handleLogout} className="hidden sm:inline-flex">
         <LogOut className="w-4 h-4 mr-2 text-muted-foreground" />
+        Logout
       </Button>
     </div>
   );

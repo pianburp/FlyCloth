@@ -1,11 +1,10 @@
 import { AuthButton } from "@/components/auth";
+import { AppSidebar } from "@/components/layout/app-sidebar";
 import { ThemeSwitcher } from "@/components/layout";
-import { hasEnvVars } from "@/lib/utils";
+import { SidebarProvider, SidebarTrigger, SidebarInset } from "@/components/ui/sidebar";
 import Link from "next/link";
 import { Suspense } from "react";
 import { Hero, Features, ContactUs } from "@/components/marketing";
-import { Menu, User } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import { RootLayoutWrapper } from "@/components/layout/root-layout-wrapper";
 import { getCachedUserProfile } from "@/lib/rbac";
 
@@ -25,72 +24,55 @@ export default async function Home() {
   }
 
   return (
-    <main className="min-h-screen bg-background flex flex-col relative">
-      {/* Luxury Navigation Bar */}
-      <nav className="fixed top-0 z-50 w-full bg-transparent">
-        {/* Top bar with announcement */}
+    <SidebarProvider defaultOpen={false}>
+      <AppSidebar />
+      <SidebarInset>
+        {/* Announcement Bar */}
         <div className="bg-black text-white py-2 text-center">
           <p className="text-xs tracking-luxury uppercase">
             Complimentary Shipping on Orders Over RM 500
           </p>
         </div>
 
-        {/* Main navigation */}
-        <div className="bg-background/80 backdrop-blur-md border-b border-border/30">
-          <div className="container mx-auto flex h-16 items-center justify-between px-6 lg:px-12">
-            {/* Left Navigation */}
-            <div className="hidden lg:flex items-center gap-8">
-              <Link
-                href="/shop"
-                className="text-xs tracking-luxury uppercase text-foreground/80 hover:text-foreground transition-colors duration-300 luxury-underline"
-              >
-                Collections
-              </Link>
-              <Link
-                href="/custom-tailored"
-                className="text-xs tracking-luxury uppercase text-foreground/80 hover:text-foreground transition-colors duration-300 luxury-underline"
-              >
-                Custom Tailored
-              </Link>
-            </div>
-
-            {/* Mobile Menu Button */}
-            <Button variant="ghost" size="icon" className="lg:hidden">
-              <Menu className="w-5 h-5" />
-            </Button>
-
-            {/* Logo */}
-            <Link
-              href="/"
-              className="absolute left-1/2 -translate-x-1/2 flex flex-col items-center gap-0.5 transition-opacity hover:opacity-80"
-            >
-              <span className="text-xl lg:text-2xl font-light tracking-tight">
-                FlyCloth
-              </span>
+        {/* Header - Consistent with authenticated layout */}
+        <header className="w-full flex justify-between items-center border-b border-b-foreground/10 h-14 sm:h-16 px-2 sm:px-4 sticky top-0 bg-background/95 backdrop-blur-md z-50">
+          <div className="flex items-center gap-2 sm:gap-4">
+            <SidebarTrigger className="-ml-1" />
+            {/* Desktop logo */}
+            <Link href="/" className="text-xl font-light tracking-tight hidden sm:block">
+              FlyCloth
             </Link>
-
-            {/* Right Navigation */}
-            <div className="flex items-center gap-4 lg:gap-6">
-                <Suspense fallback={<Button variant="ghost" size="icon"><User className="w-4 h-4" /></Button>}>
-                  <AuthButton />
-                </Suspense>
-              <ThemeSwitcher />
-            </div>
+            {/* Mobile logo */}
+            <Link href="/" className="text-base font-light tracking-tight sm:hidden">
+              FlyCloth
+            </Link>
           </div>
-        </div>
-      </nav>
 
-      {/* Hero Section */}
-      <Hero />
+          <div className="flex items-center gap-1 sm:gap-2 md:gap-4">
+            <Suspense>
+              <AuthButton />
+            </Suspense>
+            <ThemeSwitcher />
+          </div>
+        </header>
 
-      {/* Main Content */}
-      <div className="flex flex-col">
-        {/* Features/Collections Section */}
-        <Features />
+        {/* Main Content */}
+        <main className="flex-1 w-full bg-background">
+          {/* Hero Section */}
+          <Hero />
 
-        {/* Editorial/Newsletter/Contact Section */}
-        <ContactUs />
-      </div>
-    </main>
+          {/* Features/Collections Section */}
+          <Features />
+
+          {/* Editorial/Newsletter/Contact Section */}
+          <ContactUs />
+        </main>
+
+        {/* Footer */}
+        <footer className="w-full flex items-center justify-center border-t text-center text-xs py-8">
+          <p>FlyCloth - Your Premium Destination for Luxury Attire</p>
+        </footer>
+      </SidebarInset>
+    </SidebarProvider>
   );
 }

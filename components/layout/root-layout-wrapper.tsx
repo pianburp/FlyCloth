@@ -33,14 +33,19 @@ export async function RootLayoutWrapper({ children }: RootLayoutWrapperProps) {
         <SidebarProvider defaultOpen={false}>
             <AppSidebar initialUser={initialUser} />
             <SidebarInset>
-                <header className="w-full flex justify-between items-center border-b border-b-foreground/10 h-16 px-4 sticky top-0 bg-background z-50">
-                    <div className="flex items-center gap-4">
+                <header className="w-full flex justify-between items-center border-b border-b-foreground/10 h-14 sm:h-16 px-2 sm:px-4 sticky top-0 bg-background z-50">
+                    <div className="flex items-center gap-2 sm:gap-4">
                         <SidebarTrigger className="-ml-1" />
+                        {/* Desktop logo */}
                         <Link href={"/"} className="text-xl font-semibold hidden sm:block">
                             FlyCloth
                         </Link>
+                        {/* Mobile logo */}
+                        <Link href={"/"} className="text-base font-semibold sm:hidden">
+                            FlyCloth
+                        </Link>
                     </div>
-                    <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-1 sm:gap-2 md:gap-4">
                         <Suspense>
                             <AuthButton />
                         </Suspense>
