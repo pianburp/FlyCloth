@@ -2,6 +2,7 @@ import { getCachedUserProfile } from "@/lib/rbac";
 import { createClient } from "@/lib/supabase/server";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { ShirtIcon, PackageIcon, DollarSignIcon, UsersIcon } from "lucide-react";
+import { AnalyticsChart, ChartDataPoint } from "./analytics-chart";
 
 export const dynamic = 'force-dynamic';
 
@@ -16,7 +17,8 @@ export default async function AdminDashboard() {
     { count: usersCount },
     { data: revenueData },
     { data: recentOrders },
-    { data: allOrderItems }
+    { data: allOrderItems },
+    { data: ordersWithDate }
   ] = await Promise.all([
     getCachedUserProfile(),
     supabase.from("products").select("*", { count: "exact", head: true }),
@@ -36,10 +38,42 @@ export default async function AdminDashboard() {
       `)
       .order("created_at", { ascending: false })
       .limit(5),
-    supabase.from("order_items").select("product_name, quantity, unit_price")
+    supabase.from("order_items").select("product_name, quantity, unit_price"),
+    supabase.from("orders")
+      .select(`
+        total_amount,
+        created_at,
+        order_items (
+          quantity
+        )
+      `)
+      .order("created_at", { ascending: true })
   ]);
 
   const totalRevenue = revenueData?.reduce((acc, order) => acc + (Number(order.total_amount) || 0), 0) || 0;
+
+  // Calculate monthly analytics data for chart
+  const monthlyStats: Record<string, { revenue: number; sold_count: number }> = {};
+
+  ordersWithDate?.forEach((order) => {
+    const date = new Date(order.created_at);
+    const monthKey = date.toLocaleDateString('en-US', { year: 'numeric', month: 'long' });
+
+    if (!monthlyStats[monthKey]) {
+      monthlyStats[monthKey] = { revenue: 0, sold_count: 0 };
+    }
+
+    monthlyStats[monthKey].revenue += Number(order.total_amount) || 0;
+    monthlyStats[monthKey].sold_count += order.order_items?.reduce((sum, item) => sum + (item.quantity || 0), 0) || 0;
+  });
+
+  const chartData: ChartDataPoint[] = Object.entries(monthlyStats)
+    .map(([month, stats]) => ({
+      month,
+      revenue: Math.round(stats.revenue * 100) / 100,
+      sold_count: stats.sold_count,
+    }))
+    .slice(-6); // Last 6 months
 
   // Calculate top products
   const productStats: Record<string, { sold: number; revenue: number }> = {};
@@ -126,6 +160,11 @@ export default async function AdminDashboard() {
             </p>
           </CardContent>
         </Card>
+      </div>
+
+      {/* Analytics Chart */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
+        <AnalyticsChart data={chartData} />
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">

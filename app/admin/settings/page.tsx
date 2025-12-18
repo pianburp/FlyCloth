@@ -1,9 +1,10 @@
-import { requireAdmin } from "@/lib/rbac";
+import { requireAdmin, getUserProfile } from "@/lib/rbac";
 import { redirect } from "next/navigation";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { AdminSettingsForm } from "./admin-settings-form";
+import { AdminChangePasswordForm } from "./admin-change-password-form";
+import { Shield, User, Lock, Info } from "lucide-react";
 
 export const dynamic = 'force-dynamic';
 
@@ -14,78 +15,104 @@ export default async function SettingsPage() {
     redirect("/user");
   }
 
+  const profile = await getUserProfile();
+
+  if (!profile) {
+    redirect("/auth/login");
+  }
+
   return (
     <div className="flex flex-col gap-6 sm:gap-8">
+      {/* Page Header */}
       <div>
-        <h1 className="text-2xl sm:text-3xl font-bold mb-2">Store Settings</h1>
+        <h1 className="text-2xl sm:text-3xl font-bold mb-2">Admin Settings</h1>
         <p className="text-sm sm:text-base text-muted-foreground">
-          Configure your FlyCloth store settings
+          Manage your admin profile and account security
         </p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Profile Information Card */}
         <Card>
           <CardHeader>
-            <CardTitle>Store Information</CardTitle>
-            <CardDescription>Update your store details</CardDescription>
+            <div className="flex items-center gap-2">
+              <User className="w-5 h-5 text-primary" />
+              <CardTitle>Profile Information</CardTitle>
+            </div>
+            <CardDescription>
+              Update your personal details and contact information
+            </CardDescription>
           </CardHeader>
           <CardContent>
-            <form className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="store-name">Store Name</Label>
-                <Input id="store-name" defaultValue="FlyCloth" />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="store-email">Store Email</Label>
-                <Input id="store-email" type="email" defaultValue="contact@flycloth.com" />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="store-phone">Phone Number</Label>
-                <Input id="store-phone" type="tel" defaultValue="+1234567890" />
-              </div>
-              <Button>Save Changes</Button>
-            </form>
+            <AdminSettingsForm
+              initialData={{
+                fullName: profile.full_name || "",
+                email: profile.email || "",
+                phone: profile.phone || "",
+                address: profile.address || "",
+              }}
+            />
           </CardContent>
         </Card>
 
+        {/* Security Card */}
         <Card>
           <CardHeader>
-            <CardTitle>Pricing Settings</CardTitle>
-            <CardDescription>Configure pricing and taxes</CardDescription>
+            <div className="flex items-center gap-2">
+              <Lock className="w-5 h-5 text-primary" />
+              <CardTitle>Security</CardTitle>
+            </div>
+            <CardDescription>
+              Update your password to keep your account secure
+            </CardDescription>
           </CardHeader>
           <CardContent>
-            <form className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="tax-rate">Tax Rate (%)</Label>
-                <Input id="tax-rate" type="number" step="0.01" defaultValue="10.00" />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="shipping-fee">Shipping Fee (RM)</Label>
-                <Input id="shipping-fee" type="number" step="0.01" defaultValue="5.99" />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="free-shipping">Free Shipping Threshold (RM)</Label>
-                <Input id="free-shipping" type="number" step="0.01" defaultValue="100.00" />
-              </div>
-              <Button>Save Changes</Button>
-            </form>
+            <AdminChangePasswordForm />
           </CardContent>
         </Card>
       </div>
 
+      {/* Admin Role Information Card */}
       <Card>
         <CardHeader>
-          <CardTitle>User Management</CardTitle>
-          <CardDescription>Manage user roles and permissions</CardDescription>
+          <div className="flex items-center gap-2">
+            <Shield className="w-5 h-5 text-primary" />
+            <CardTitle>Admin Role</CardTitle>
+          </div>
+          <CardDescription>
+            Your current role and permissions
+          </CardDescription>
         </CardHeader>
         <CardContent>
-          <p className="text-sm text-muted-foreground mb-4">
-            To assign admin roles to users, update the user's role in the Supabase profiles table.
-          </p>
-          <div className="space-y-2">
-            <p className="text-sm"><strong>Current Role:</strong> Admin</p>
-            <p className="text-sm text-muted-foreground">
-              Admin users can manage products, orders, pricing, and all store settings.
+          <div className="space-y-4">
+            <div className="flex items-center gap-3">
+              <span className="text-sm font-medium">Current Role:</span>
+              <Badge variant="default" className="capitalize">
+                {profile.role}
+              </Badge>
+            </div>
+
+            <div className="rounded-lg bg-muted/50 p-4 space-y-2">
+              <div className="flex items-start gap-2">
+                <Info className="w-4 h-4 text-muted-foreground mt-0.5" />
+                <div className="text-sm text-muted-foreground">
+                  <p className="font-medium text-foreground mb-1">Admin Privileges</p>
+                  <ul className="list-disc list-inside space-y-1">
+                    <li>Manage all products and inventory</li>
+                    <li>View and process customer orders</li>
+                    <li>Access store analytics and reports</li>
+                    <li>Configure store settings</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+
+            <p className="text-xs text-muted-foreground">
+              Account created on {new Date(profile.created_at).toLocaleDateString('en-US', {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric'
+              })}
             </p>
           </div>
         </CardContent>

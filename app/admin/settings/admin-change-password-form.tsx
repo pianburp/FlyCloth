@@ -6,9 +6,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/components/ui/use-toast";
 import { createClient } from "@/lib/supabase/client";
-import { Loader2, Eye, EyeOff, Check, X } from "lucide-react";
+import { Loader2, Eye, EyeOff, Check, X, Lock } from "lucide-react";
 
-export function ChangePasswordForm() {
+export function AdminChangePasswordForm() {
     const { toast } = useToast();
     const [isLoading, setIsLoading] = useState(false);
     const [showCurrentPassword, setShowCurrentPassword] = useState(false);
@@ -96,7 +96,7 @@ export function ChangePasswordForm() {
     const StrengthIndicator = ({ met, label }: { met: boolean; label: string }) => (
         <div className={`flex items-center gap-2 text-xs transition-colors ${met ? 'text-emerald-600 dark:text-emerald-400' : 'text-muted-foreground'}`}>
             {met ? <Check className="w-3 h-3" /> : <X className="w-3 h-3" />}
-            <span className="font-light">{label}</span>
+            <span>{label}</span>
         </div>
     );
 
@@ -104,7 +104,8 @@ export function ChangePasswordForm() {
         <form onSubmit={handleSubmit} className="space-y-6">
             {/* Current Password */}
             <div className="space-y-2">
-                <Label htmlFor="currentPassword" className="text-sm font-light">
+                <Label htmlFor="currentPassword" className="text-sm font-medium flex items-center gap-2">
+                    <Lock className="w-4 h-4 text-muted-foreground" />
                     Current Password
                 </Label>
                 <div className="relative">
@@ -114,7 +115,7 @@ export function ChangePasswordForm() {
                         value={currentPassword}
                         onChange={(e) => setCurrentPassword(e.target.value)}
                         placeholder="Enter current password"
-                        className="luxury-input pr-10"
+                        className="pr-10"
                     />
                     <button
                         type="button"
@@ -128,7 +129,8 @@ export function ChangePasswordForm() {
 
             {/* New Password */}
             <div className="space-y-2">
-                <Label htmlFor="newPassword" className="text-sm font-light">
+                <Label htmlFor="newPassword" className="text-sm font-medium flex items-center gap-2">
+                    <Lock className="w-4 h-4 text-muted-foreground" />
                     New Password
                 </Label>
                 <div className="relative">
@@ -138,7 +140,7 @@ export function ChangePasswordForm() {
                         value={newPassword}
                         onChange={(e) => setNewPassword(e.target.value)}
                         placeholder="Enter new password"
-                        className="luxury-input pr-10"
+                        className="pr-10"
                     />
                     <button
                         type="button"
@@ -162,7 +164,8 @@ export function ChangePasswordForm() {
 
             {/* Confirm Password */}
             <div className="space-y-2">
-                <Label htmlFor="confirmPassword" className="text-sm font-light">
+                <Label htmlFor="confirmPassword" className="text-sm font-medium flex items-center gap-2">
+                    <Lock className="w-4 h-4 text-muted-foreground" />
                     Confirm New Password
                 </Label>
                 <div className="relative">
@@ -172,7 +175,7 @@ export function ChangePasswordForm() {
                         value={confirmPassword}
                         onChange={(e) => setConfirmPassword(e.target.value)}
                         placeholder="Confirm new password"
-                        className="luxury-input pr-10"
+                        className="pr-10"
                     />
                     <button
                         type="button"
@@ -186,7 +189,7 @@ export function ChangePasswordForm() {
                 {confirmPassword.length > 0 && (
                     <div className={`flex items-center gap-2 text-xs transition-colors ${passwordsMatch ? 'text-emerald-600 dark:text-emerald-400' : 'text-destructive'}`}>
                         {passwordsMatch ? <Check className="w-3 h-3" /> : <X className="w-3 h-3" />}
-                        <span className="font-light">{passwordsMatch ? 'Passwords match' : 'Passwords do not match'}</span>
+                        <span>{passwordsMatch ? 'Passwords match' : 'Passwords do not match'}</span>
                     </div>
                 )}
             </div>
@@ -194,7 +197,7 @@ export function ChangePasswordForm() {
             <Button
                 type="submit"
                 disabled={isLoading || !canSubmit}
-                className="text-xs tracking-luxury uppercase"
+                className="w-full sm:w-auto"
             >
                 {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 Update Password

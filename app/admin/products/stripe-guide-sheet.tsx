@@ -15,9 +15,8 @@ import {
     ExternalLink,
     Package,
     TicketPercent,
-    ArrowRight,
-    CheckCircle,
-    Zap,
+    Lightbulb,
+    BookOpen,
 } from "lucide-react";
 
 export function StripeGuideSheet() {
@@ -33,51 +32,37 @@ export function StripeGuideSheet() {
             </SheetTrigger>
             <SheetContent className="w-full sm:max-w-lg overflow-y-auto">
                 <SheetHeader>
-                    <SheetTitle className="flex items-center gap-2">
-                        <Zap className="w-5 h-5 text-blue-600" />
-                        Stripe Product & Coupon Guide
-                    </SheetTitle>
+                    <SheetTitle>Stripe Integration Guide</SheetTitle>
                     <SheetDescription>
-                        Learn how to manage products and promotions via Stripe Dashboard
+                        How products and coupons work with Stripe
                     </SheetDescription>
                 </SheetHeader>
 
-                <div className="mt-6 space-y-6">
-                    {/* Product Management */}
+                <div className="space-y-6 p-4">
+                    {/* Product Sync - Step by Step */}
                     <section className="space-y-3">
                         <h3 className="font-semibold flex items-center gap-2 text-lg">
                             <Package className="w-5 h-5 text-primary" />
-                            Product Management
+                            How Product Sync Works
                         </h3>
-                        <div className="space-y-2 text-sm text-muted-foreground">
-                            <p>
-                                Products are automatically synced to Stripe when you create or
-                                update them. Here's how it works:
-                            </p>
-                            <ul className="space-y-2 pl-4">
-                                <li className="flex items-start gap-2">
-                                    <CheckCircle className="w-4 h-4 text-green-600 mt-0.5 shrink-0" />
-                                    <span>
-                                        <strong>Auto-sync:</strong> When you add a product here, it
-                                        automatically creates a corresponding product and price in
-                                        Stripe.
-                                    </span>
-                                </li>
-                                <li className="flex items-start gap-2">
-                                    <CheckCircle className="w-4 h-4 text-green-600 mt-0.5 shrink-0" />
-                                    <span>
-                                        <strong>Price updates:</strong> Price changes sync to Stripe
-                                        as new price objects (Stripe versioning).
-                                    </span>
-                                </li>
-                                <li className="flex items-start gap-2">
-                                    <CheckCircle className="w-4 h-4 text-green-600 mt-0.5 shrink-0" />
-                                    <span>
-                                        <strong>Stripe badge:</strong> Products with a blue "Stripe"
-                                        badge are synced and ready for checkout.
-                                    </span>
-                                </li>
-                            </ul>
+                        <p className="text-sm text-muted-foreground">
+                            Products are created here in the admin panel and automatically synced to Stripe (not the other way around).
+                        </p>
+                        <div className="bg-muted/50 rounded-lg p-4 space-y-3">
+                            <p className="text-sm font-medium">Step-by-Step Process:</p>
+                            <ol className="text-sm text-muted-foreground space-y-2 list-decimal list-inside">
+                                <li>Go to <strong>Admin Panel → Products → Add New Product</strong></li>
+                                <li>Fill in product details (name, price, SKU, images, etc.)</li>
+                                <li>Ensure <strong>"Create in Stripe"</strong> checkbox is enabled</li>
+                                <li>Click <strong>Save Product</strong></li>
+                                <li>The product is saved to your database first</li>
+                                <li>Then it automatically creates a Product and Price in Stripe</li>
+                                <li>Stripe IDs are saved back to your database</li>
+                                <li>Product displays a blue <strong>"Stripe"</strong> badge when synced</li>
+                            </ol>
+                        </div>
+                        <div className="text-sm text-muted-foreground space-y-1">
+                            <p><strong>Note:</strong> Price changes create new Stripe Price objects (Stripe versioning). The old price is archived automatically.</p>
                         </div>
                         <a
                             href="https://dashboard.stripe.com/products"
@@ -85,53 +70,55 @@ export function StripeGuideSheet() {
                             rel="noopener noreferrer"
                             className="inline-flex items-center gap-2 text-sm text-blue-600 hover:text-blue-700 font-medium"
                         >
-                            View Products in Stripe
+                            View Products in Stripe Dashboard
                             <ExternalLink className="w-3.5 h-3.5" />
                         </a>
                     </section>
 
                     <hr className="border-border" />
 
-                    {/* Coupon Management */}
+                    {/* Coupon Creation - Step by Step */}
                     <section className="space-y-3">
                         <h3 className="font-semibold flex items-center gap-2 text-lg">
                             <TicketPercent className="w-5 h-5 text-primary" />
-                            Coupon & Promotion Codes
+                            Creating Coupons in Stripe
                         </h3>
-                        <div className="space-y-2 text-sm text-muted-foreground">
-                            <p>
-                                Coupons and promotion codes are managed directly in Stripe for
-                                better control and analytics:
-                            </p>
-                            <ul className="space-y-2 pl-4">
-                                <li className="flex items-start gap-2">
-                                    <ArrowRight className="w-4 h-4 text-primary mt-0.5 shrink-0" />
-                                    <span>
-                                        <strong>Coupons:</strong> Define the discount (percentage or
-                                        fixed amount, duration, limits).
-                                    </span>
+                        <p className="text-sm text-muted-foreground">
+                            Coupons and promotion codes are managed directly in the Stripe Dashboard for better control and analytics.
+                        </p>
+
+                        <div className="bg-muted/50 rounded-lg p-4 space-y-3">
+                            <p className="text-sm font-medium">Step 1: Create a Coupon</p>
+                            <ol className="text-sm text-muted-foreground space-y-1.5 list-decimal list-inside">
+                                <li>Go to <strong>Stripe Dashboard → Products → Coupons</strong></li>
+                                <li>Click <strong>"+ Create coupon"</strong></li>
+                                <li>Choose discount type:
+                                    <ul className="ml-6 mt-1 space-y-1 list-disc">
+                                        <li><strong>Percentage off</strong> (e.g., 20% off)</li>
+                                        <li><strong>Fixed amount off</strong> (e.g., RM10 off)</li>
+                                    </ul>
                                 </li>
-                                <li className="flex items-start gap-2">
-                                    <ArrowRight className="w-4 h-4 text-primary mt-0.5 shrink-0" />
-                                    <span>
-                                        <strong>Promotion Codes:</strong> Create shareable codes
-                                        tied to coupons (e.g., SAVE20, WELCOME10).
-                                    </span>
-                                </li>
-                            </ul>
+                                <li>Set duration (once, repeating, or forever)</li>
+                                <li>Optionally set redemption limits and expiry date</li>
+                                <li>Click <strong>"Create coupon"</strong></li>
+                            </ol>
                         </div>
 
                         <div className="bg-muted/50 rounded-lg p-4 space-y-3">
-                            <p className="text-sm font-medium">Quick Steps:</p>
-                            <ol className="text-sm text-muted-foreground space-y-2 list-decimal list-inside">
-                                <li>Go to Stripe Dashboard → Products → Coupons</li>
-                                <li>Click "Create coupon" and set discount details</li>
-                                <li>
-                                    Create a Promotion Code with a memorable code name
+                            <p className="text-sm font-medium">Step 2: Create a Promotion Code</p>
+                            <ol className="text-sm text-muted-foreground space-y-1.5 list-decimal list-inside">
+                                <li>After creating a coupon, click <strong>"+ Add promotion code"</strong></li>
+                                <li>Enter a memorable code (e.g., <strong>SAVE20</strong>, <strong>WELCOME10</strong>)</li>
+                                <li>Optionally set:
+                                    <ul className="ml-6 mt-1 space-y-1 list-disc">
+                                        <li>Maximum redemptions</li>
+                                        <li>First-time customer only</li>
+                                        <li>Minimum order amount</li>
+                                        <li>Expiry date</li>
+                                    </ul>
                                 </li>
-                                <li>
-                                    Customers can apply the code at checkout automatically
-                                </li>
+                                <li>Click <strong>"Create"</strong></li>
+                                <li>Share the code with customers - they can apply it at checkout</li>
                             </ol>
                         </div>
 
@@ -161,20 +148,22 @@ export function StripeGuideSheet() {
 
                     {/* Tips */}
                     <section className="space-y-3">
-                        <h3 className="font-semibold text-lg">💡 Pro Tips</h3>
+                        <h3 className="font-semibold flex items-center gap-2 text-lg">
+                            <Lightbulb className="w-5 h-5 text-primary" />
+                            Tips
+                        </h3>
                         <ul className="text-sm text-muted-foreground space-y-2">
                             <li>
-                                • Use <strong>first_time_transaction</strong> restriction for
-                                new customer discounts
+                                Use <strong>first_time_transaction</strong> restriction for welcome discounts
                             </li>
                             <li>
-                                • Set <strong>max redemptions</strong> to limit coupon usage
+                                Set <strong>max redemptions</strong> to create limited-time offers
                             </li>
                             <li>
-                                • Track coupon performance in Stripe's analytics dashboard
+                                Set <strong>minimum order amounts</strong> to protect margins
                             </li>
                             <li>
-                                • Use <strong>minimum order</strong> amounts to protect margins
+                                Track coupon performance in Stripe&apos;s analytics dashboard
                             </li>
                         </ul>
                     </section>
@@ -183,7 +172,10 @@ export function StripeGuideSheet() {
 
                     {/* Helpful Links */}
                     <section className="space-y-3">
-                        <h3 className="font-semibold text-lg">📚 Helpful Resources</h3>
+                        <h3 className="font-semibold flex items-center gap-2 text-lg">
+                            <BookOpen className="w-5 h-5 text-primary" />
+                            Documentation
+                        </h3>
                         <div className="flex flex-col gap-2">
                             <a
                                 href="https://stripe.com/docs/products-prices/overview"
@@ -210,7 +202,7 @@ export function StripeGuideSheet() {
                                 className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground"
                             >
                                 <ExternalLink className="w-3.5 h-3.5" />
-                                View API Logs (for debugging)
+                                API Logs (for debugging)
                             </a>
                         </div>
                     </section>
