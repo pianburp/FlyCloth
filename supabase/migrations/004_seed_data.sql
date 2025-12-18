@@ -1,20 +1,14 @@
 -- =============================================
--- Seed Data (Optional - Sample categories and coupons)
+-- Seed Data (Optional - Sample categories)
 -- =============================================
 
 -- Sample categories
 INSERT INTO categories (name) VALUES
-  ('Casual'),
-  ('Formal'),
-  ('Polo'),
-  ('Graphic Tee'),
-  ('Tank Top')
+  ('Slim Fit'),
+  ('Regular Fit'),
+  ('Plus Size'),
+  ('Baggy Fit')
 ON CONFLICT DO NOTHING;
 
--- Sample coupons
-INSERT INTO coupons (code, discount_type, discount_value, is_active) VALUES
-  ('SAVE10', 'percentage', 10, true),
-  ('NEWUSER', 'percentage', 15, true),
-  ('SAVE5', 'fixed', 5, true),
-  ('FREESHIP', 'shipping', 9.99, true)
-ON CONFLICT DO NOTHING;
+-- Note: Coupons are deprecated. Use Stripe Promotion Codes instead.
+-- Legacy coupons kept for reference only.

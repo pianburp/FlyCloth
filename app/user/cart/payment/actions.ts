@@ -88,20 +88,3 @@ export async function createOrder(
 
   return { success: true, orderId: order.id };
 }
-
-export async function getActiveCoupons() {
-  const supabase = await createClient();
-  const { data: coupons, error } = await supabase
-    .from('coupons')
-    .select('*')
-    .eq('is_active', true)
-    .or(`expires_at.is.null,expires_at.gt.${new Date().toISOString()}`)
-    .order('created_at', { ascending: false });
-
-  if (error) {
-    console.error("Error fetching coupons:", error);
-    return [];
-  }
-
-  return coupons || [];
-}

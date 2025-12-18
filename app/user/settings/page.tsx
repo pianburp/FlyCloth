@@ -1,7 +1,7 @@
 import { getUserProfile } from "@/lib/rbac";
 import { redirect } from "next/navigation";
 import { SettingsForm } from "./settings-form";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { ChangePasswordForm } from "./change-password-form";
 
 export const dynamic = 'force-dynamic';
 
@@ -13,32 +13,51 @@ export default async function SettingsPage() {
   }
 
   return (
-    <div className="container w-full py-6 sm:py-10 px-0 sm:px-4">
-      <div className="mb-6 sm:mb-8">
-        <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Settings</h1>
-        <p className="text-sm sm:text-base text-muted-foreground">
-          Manage your account settings and preferences.
-        </p>
+    <div className="flex flex-col gap-8 sm:gap-10 max-w-6xl mx-auto">
+      {/* Luxury Page Header */}
+      <div className="luxury-page-header">
+        <span className="label">Account</span>
+        <h1>Settings</h1>
+        <p>Manage your profile and account preferences</p>
+        <div className="gold-divider mt-6" />
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Profile Information</CardTitle>
-          <CardDescription>
-            Update your personal information and shipping address.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <SettingsForm 
+      {/* Profile Information */}
+      <div className="luxury-card overflow-hidden">
+        <div className="px-6 py-5 border-b border-border/40">
+          <h3 className="text-sm tracking-luxury uppercase text-muted-foreground">
+            Profile Information
+          </h3>
+          <p className="text-xs text-muted-foreground/70 font-light mt-1">
+            Update your personal details and shipping address
+          </p>
+        </div>
+        <div className="p-6">
+          <SettingsForm
             initialData={{
               fullName: profile.full_name || "",
               email: profile.email || "",
               phone: profile.phone || "",
               address: profile.address || "",
-            }} 
+            }}
           />
-        </CardContent>
-      </Card>
+        </div>
+      </div>
+
+      {/* Change Password */}
+      <div className="luxury-card overflow-hidden">
+        <div className="px-6 py-5 border-b border-border/40">
+          <h3 className="text-sm tracking-luxury uppercase text-muted-foreground">
+            Security
+          </h3>
+          <p className="text-xs text-muted-foreground/70 font-light mt-1">
+            Update your password to keep your account secure
+          </p>
+        </div>
+        <div className="p-6">
+          <ChangePasswordForm />
+        </div>
+      </div>
     </div>
   );
 }

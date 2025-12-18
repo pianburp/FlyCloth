@@ -94,8 +94,7 @@ export function AuthButton() {
         </Badge>
       </div>
       <Button size="sm" variant="ghost" onClick={handleLogout}>
-        <LogOut className="w-4 h-4 mr-2" />
-        Logout
+        <LogOut className="w-4 h-4 mr-2 text-muted-foreground" />
       </Button>
     </div>
   );

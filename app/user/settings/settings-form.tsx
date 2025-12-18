@@ -26,7 +26,7 @@ export function SettingsForm({ initialData }: SettingsFormProps) {
     setIsLoading(true);
     try {
       const result = await updateProfile(formData);
-      
+
       if (result?.error) {
         toast({
           variant: "destructive",
@@ -51,52 +51,58 @@ export function SettingsForm({ initialData }: SettingsFormProps) {
   }
 
   return (
-    <form action={handleSubmit} className="space-y-6 w-full">
+    <form action={handleSubmit} className="space-y-5 w-full">
       <div className="space-y-2">
-        <Label htmlFor="email">Email</Label>
-        <Input 
-          id="email" 
-          value={initialData.email} 
-          disabled 
-          className="bg-muted"
+        <Label htmlFor="email" className="text-sm font-light">Email</Label>
+        <Input
+          id="email"
+          value={initialData.email}
+          disabled
+          className="bg-muted/50 text-muted-foreground"
         />
-        <p className="text-xs text-muted-foreground">
-          Email cannot be changed.
+        <p className="text-xs text-muted-foreground/70 font-light">
+          Email address cannot be changed
         </p>
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="fullName">Full Name</Label>
-        <Input 
-          id="fullName" 
-          name="fullName" 
-          defaultValue={initialData.fullName} 
+        <Label htmlFor="fullName" className="text-sm font-light">Full Name</Label>
+        <Input
+          id="fullName"
+          name="fullName"
+          defaultValue={initialData.fullName}
           placeholder="John Doe"
+          className="luxury-input"
         />
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="phone">Phone Number</Label>
-        <Input 
-          id="phone" 
-          name="phone" 
-          defaultValue={initialData.phone} 
-          placeholder="+1 234 567 890"
+        <Label htmlFor="phone" className="text-sm font-light">Phone Number</Label>
+        <Input
+          id="phone"
+          name="phone"
+          defaultValue={initialData.phone}
+          placeholder="+60 12 345 6789"
+          className="luxury-input"
         />
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="address">Shipping Address</Label>
-        <Textarea 
-          id="address" 
-          name="address" 
-          defaultValue={initialData.address} 
-          placeholder="123 Main St, City, Country"
-          className="min-h-[100px]"
+        <Label htmlFor="address" className="text-sm font-light">Shipping Address</Label>
+        <Textarea
+          id="address"
+          name="address"
+          defaultValue={initialData.address}
+          placeholder="123 Main Street, City, State, Postal Code"
+          className="min-h-[100px] luxury-input resize-none"
         />
       </div>
 
-      <Button type="submit" disabled={isLoading}>
+      <Button
+        type="submit"
+        disabled={isLoading}
+        className="text-xs tracking-luxury uppercase"
+      >
         {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
         Save Changes
       </Button>

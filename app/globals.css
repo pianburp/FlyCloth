@@ -298,3 +298,106 @@
     @apply bg-background text-foreground;
   }
 }
+/* Luxury UI components */
+@layer components {
+  /* Luxury card styling */
+  .luxury-card {
+    @apply bg-card border border-border/40 transition-all duration-300;
+    box-shadow: 
+      0 1px 3px rgba(0,0,0,0.04),
+      0 4px 12px rgba(0,0,0,0.03);
+  }
+
+  .luxury-card:hover {
+    box-shadow: 
+      0 2px 8px rgba(0,0,0,0.06),
+      0 8px 24px rgba(0,0,0,0.04);
+  }
+
+  /* Luxury page header */
+  .luxury-page-header {
+    @apply mb-8;
+  }
+
+  .luxury-page-header h1 {
+    @apply text-3xl sm:text-4xl font-light tracking-tight mb-2;
+  }
+
+  .luxury-page-header p {
+    @apply text-sm sm:text-base text-muted-foreground font-light;
+  }
+
+  .luxury-page-header .label {
+    @apply text-xs tracking-luxury uppercase text-muted-foreground mb-3 block;
+  }
+
+  /* Gold accent divider */
+  .gold-divider {
+    @apply h-px w-full;
+    background: linear-gradient(90deg, transparent, hsl(var(--gold)), transparent);
+  }
+
+  /* Luxury form inputs */
+  .luxury-input {
+    @apply transition-all duration-300;
+  }
+
+  .luxury-input:focus {
+    @apply ring-2 ring-offset-0;
+    --tw-ring-color: hsl(var(--gold) / 0.3);
+    border-color: hsl(var(--gold) / 0.5);
+  }
+
+  /* Luxury button with gold accent */
+  .luxury-button-gold {
+    @apply relative overflow-hidden transition-all duration-300;
+    background: linear-gradient(135deg, hsl(38 50% 45%) 0%, hsl(38 40% 35%) 100%);
+  }
+
+  .luxury-button-gold:hover {
+    background: linear-gradient(135deg, hsl(38 50% 50%) 0%, hsl(38 40% 40%) 100%);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px hsl(38 50% 45% / 0.3);
+  }
+
+  /* Luxury status badges */
+  .luxury-badge {
+    @apply px-3 py-1 text-[10px] tracking-luxury uppercase font-medium;
+  }
+
+  .luxury-badge-success {
+    @apply bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20;
+  }
+
+  .luxury-badge-warning {
+    @apply bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20;
+  }
+
+  .luxury-badge-info {
+    @apply bg-blue-500/10 text-blue-600 dark:text-blue-400 border border-blue-500/20;
+  }
+
+  .luxury-badge-gold {
+    background: linear-gradient(135deg, hsl(38 50% 55% / 0.15) 0%, hsl(38 40% 45% / 0.15) 100%);
+    color: hsl(38 50% 45%);
+    border: 1px solid hsl(38 50% 55% / 0.3);
+  }
+
+  .dark .luxury-badge-gold {
+    color: hsl(38 50% 65%);
+  }
+
+  /* Luxury empty state */
+  .luxury-empty-state {
+    @apply flex flex-col items-center justify-center py-16 text-center;
+  }
+
+  .luxury-empty-state .icon-wrapper {
+    @apply w-20 h-20 rounded-full bg-muted/50 flex items-center justify-center mb-6;
+    background: linear-gradient(135deg, hsl(var(--muted)) 0%, hsl(var(--muted) / 0.5) 100%);
+  }
+
+  .luxury-empty-state p {
+    @apply text-muted-foreground font-light max-w-sm;
+  }
+}

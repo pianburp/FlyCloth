@@ -1,14 +1,15 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo, memo } from "react";
 import { motion } from "framer-motion";
 import { Badge } from "@/components/ui/badge";
 import { ShirtIcon, Star, ArrowUpRight } from "lucide-react";
 import Link from "next/link";
+import Image from "next/image";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 import { ProductFilters } from "@/components/product";
-import { PageSkeleton } from "@/components/shared";
+import { PageSkeleton } from "@/components/shared/page-skeleton";
 
 interface Product {
   id: string;
@@ -28,58 +29,69 @@ interface Profile {
   full_name: string;
 }
 
+// Pre-computed product with cached image URL to avoid re-computing on each render
+interface ProductWithImageUrl extends Product {
+  imageUrl: string | null;
+}
+
 export default function UserDashboard() {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [categories, setCategories] = useState<Category[]>([]);
-  const [featuredProducts, setFeaturedProducts] = useState<Product[]>([]);
-  const [allProducts, setAllProducts] = useState<Product[]>([]);
+  const [featuredProducts, setFeaturedProducts] = useState<ProductWithImageUrl[]>([]);
+  const [allProducts, setAllProducts] = useState<ProductWithImageUrl[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // Create Supabase client once and memoize
+  const supabase = useMemo(() => createClient(), []);
 
   useEffect(() => {
     async function fetchData() {
-      const supabase = createClient();
-
       // Get current user profile
       const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        const { data: profileData } = await supabase
-          .from('profiles')
-          .select('full_name')
-          .eq('id', user.id)
-          .single();
-        setProfile(profileData);
-      }
 
-      // Fetch categories
-      const { data: categoriesData } = await supabase
-        .from('categories')
-        .select('*')
-        .order('name');
-      setCategories(categoriesData || []);
+      // Fetch profile if user exists (don't block other fetches)
+      const profilePromise = user
+        ? supabase.from('profiles').select('full_name').eq('id', user.id).single()
+        : Promise.resolve({ data: null });
 
-      // Fetch featured products
-      const { data: featuredData } = await supabase
-        .from('products')
-        .select('*, product_images(storage_path), product_variants(stock_quantity)')
-        .eq('is_active', true)
-        .eq('is_featured', true)
-        .limit(3);
-      setFeaturedProducts(featuredData || []);
+      // Fetch all data in parallel for faster loading
+      const [profileResult, categoriesResult, featuredResult, productsResult] = await Promise.all([
+        profilePromise,
+        supabase.from('categories').select('*').order('name'),
+        supabase.from('products')
+          .select('*, product_images(storage_path), product_variants(stock_quantity)')
+          .eq('is_active', true)
+          .eq('is_featured', true)
+          .limit(3),
+        supabase.from('products')
+          .select('*, product_images(storage_path), product_variants(stock_quantity)')
+          .eq('is_active', true)
+          .order('created_at', { ascending: false })
+          .limit(12),
+      ]);
 
-      // Fetch all products
-      const { data: productsData } = await supabase
-        .from('products')
-        .select('*, product_images(storage_path), product_variants(stock_quantity)')
-        .eq('is_active', true)
-        .order('created_at', { ascending: false })
-        .limit(12);
-      setAllProducts(productsData || []);
+      setProfile(profileResult.data);
+      setCategories(categoriesResult.data || []);
+
+      // Pre-compute image URLs so LuxuryProductCard doesn't need to do it on every render
+      const getImageUrl = (product: Product): string | null => {
+        const imagePath = product.product_images?.[0]?.storage_path;
+        if (!imagePath) return null;
+        return supabase.storage.from('product-images').getPublicUrl(imagePath).data.publicUrl;
+      };
+
+      setFeaturedProducts(
+        (featuredResult.data || []).map((p: Product) => ({ ...p, imageUrl: getImageUrl(p) }))
+      );
+      setAllProducts(
+        (productsResult.data || []).map((p: Product) => ({ ...p, imageUrl: getImageUrl(p) }))
+      );
 
       setLoading(false);
     }
 
     fetchData();
-  }, []);
+  }, [supabase]);
 
   if (loading) {
     return <PageSkeleton />;
@@ -88,7 +100,7 @@ export default function UserDashboard() {
   return (
     <div className="flex flex-col pb-16">
       {/* Luxury Hero Section */}
-      <section className="relative overflow-hidden min-h-[500px] sm:min-h-[600px] flex items-center bg-black -mx-4 sm:-mx-6 lg:-mx-8">
+      <section className="relative overflow-hidden min-h-screen flex items-center bg-black -mx-4 sm:-mx-6 lg:-mx-8 -mt-16 pt-16">
         {/* Background Video */}
         <video
           autoPlay
@@ -105,12 +117,8 @@ export default function UserDashboard() {
         <div className="absolute inset-0 bg-black/50 z-[1]" />
         <div className="absolute inset-0 bg-gradient-to-b from-black/30 via-transparent to-black/70 z-[2]" />
 
-        {/* Decorative Elements */}
-        <div className="absolute top-1/4 left-6 w-px h-24 bg-gradient-to-b from-transparent via-white/20 to-transparent z-10 hidden lg:block" />
-        <div className="absolute top-1/3 right-6 w-px h-32 bg-gradient-to-b from-transparent via-white/20 to-transparent z-10 hidden lg:block" />
-
         {/* Content */}
-        <div className="relative z-10 container mx-auto px-6 lg:px-12 flex flex-col items-center text-center">
+        <div className="relative z-[5] container mx-auto px-6 lg:px-12 flex flex-col items-center text-center">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -140,27 +148,6 @@ export default function UserDashboard() {
             Discover our curated collection of premium garments, crafted with
             unparalleled attention to detail for the discerning individual.
           </motion.p>
-
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, delay: 0.8 }}
-            className="flex flex-col sm:flex-row items-center gap-4"
-          >
-            <Button
-              asChild
-              className="bg-white text-black hover:bg-white/90 px-8 py-6 text-xs tracking-luxury uppercase font-medium transition-all duration-300"
-            >
-              <Link href="#products">Explore Collection</Link>
-            </Button>
-            <Button
-              asChild
-              variant="ghost"
-              className="text-white border border-white/30 hover:bg-white/10 hover:text-white px-8 py-6 text-xs tracking-luxury uppercase font-medium transition-all duration-300"
-            >
-              <Link href="#featured">Featured Pieces</Link>
-            </Button>
-          </motion.div>
         </div>
       </section>
 
@@ -244,13 +231,16 @@ export default function UserDashboard() {
   );
 }
 
-function LuxuryProductCard({ product, index, featured = false }: { product: Product, index: number, featured?: boolean }) {
-  const supabase = createClient();
-  const imagePath = product.product_images?.[0]?.storage_path;
-  const imageUrl = imagePath
-    ? supabase.storage.from('product-images').getPublicUrl(imagePath).data.publicUrl
-    : null;
-
+// Memoized product card to prevent unnecessary re-renders
+const LuxuryProductCard = memo(function LuxuryProductCard({
+  product,
+  index,
+  featured = false
+}: {
+  product: ProductWithImageUrl;
+  index: number;
+  featured?: boolean;
+}) {
   const isLowStock = product.product_variants?.some((v) => v.stock_quantity < 25);
 
   return (
@@ -262,11 +252,14 @@ function LuxuryProductCard({ product, index, featured = false }: { product: Prod
     >
       <Link href={`/user/products/${product.id}`} className="group block">
         <div className={`relative overflow-hidden bg-muted mb-4 ${featured ? 'aspect-[3/4]' : 'aspect-square'}`}>
-          {imageUrl ? (
-            <img
-              src={imageUrl}
+          {product.imageUrl ? (
+            <Image
+              src={product.imageUrl}
               alt={product.name}
-              className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+              fill
+              sizes={featured ? "(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 33vw" : "(max-width: 768px) 50vw, 25vw"}
+              className="object-cover transition-transform duration-700 group-hover:scale-105"
+              loading="lazy"
             />
           ) : (
             <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-muted to-muted/50">
@@ -274,7 +267,7 @@ function LuxuryProductCard({ product, index, featured = false }: { product: Prod
             </div>
           )}
 
-          {/* Overlay on hover */}
+          {/* Overlay on hover - using CSS transition only */}
           <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors duration-500" />
 
           {/* Badges */}
@@ -291,7 +284,7 @@ function LuxuryProductCard({ product, index, featured = false }: { product: Prod
             )}
           </div>
 
-          {/* Quick View */}
+          {/* Quick View - using CSS transition only */}
           <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-500">
             <span className="bg-white text-black px-6 py-3 text-xs tracking-luxury uppercase transform translate-y-4 group-hover:translate-y-0 transition-transform duration-500">
               View Details
@@ -313,4 +306,4 @@ function LuxuryProductCard({ product, index, featured = false }: { product: Prod
       </Link>
     </motion.div>
   );
-}
+});

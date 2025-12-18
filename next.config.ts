@@ -5,6 +5,12 @@ const nextConfig: NextConfig = {
     remotePatterns: [
       {
         protocol: 'https',
+        hostname: 'dpmiqwinuhfjxywxxoss.supabase.co',
+        port: '',
+        pathname: '/storage/**',
+      },
+      {
+        protocol: 'https',
         hostname: 'cdn.brandfetch.io',
         port: '',
         pathname: '/**',

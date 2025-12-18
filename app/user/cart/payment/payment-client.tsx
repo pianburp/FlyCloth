@@ -124,36 +124,35 @@ export default function PaymentClient({ cartItems, userEmail }: PaymentClientPro
   };
 
   return (
-    <div className="flex flex-col gap-6 sm:gap-8 max-w-6xl mx-auto">
-      <div className="flex items-start sm:items-center gap-4">
+    <div className="flex flex-col gap-8 sm:gap-10 max-w-5xl mx-auto">
+      {/* Luxury Page Header */}
+      <div className="flex items-start gap-4">
         <Link href="/user/cart">
-          <Button variant="outline" size="icon" className="flex-shrink-0">
+          <Button variant="ghost" size="icon" className="flex-shrink-0 hover:bg-muted">
             <ArrowLeft className="w-4 h-4" />
           </Button>
         </Link>
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-bold mb-1 sm:mb-2">Checkout</h1>
-          <p className="text-muted-foreground text-sm sm:text-base">
-            Complete your purchase securely with Stripe
-          </p>
+        <div className="luxury-page-header mb-0">
+          <span className="label">Secure Checkout</span>
+          <h1>Complete Your Order</h1>
+          <p>Review your items and proceed to secure payment</p>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8">
+      <div className="gold-divider" />
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         {/* Left Column - Promo Code & Info */}
         <div className="space-y-6">
           {/* Promo Code */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Gift className="w-5 h-5" />
+          <div className="luxury-card overflow-hidden">
+            <div className="px-6 py-5 border-b border-border/40 flex items-center gap-3">
+              <Gift className="w-4 h-4 text-muted-foreground" />
+              <h3 className="text-sm tracking-luxury uppercase text-muted-foreground">
                 Promotion Code
-              </CardTitle>
-              <CardDescription>
-                Have a promo code? Enter it below or apply at checkout.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
+              </h3>
+            </div>
+            <div className="p-6 space-y-4">
               <div className="flex gap-2">
                 <Input
                   placeholder="Enter promo code"
@@ -166,11 +165,13 @@ export default function PaymentClient({ cartItems, userEmail }: PaymentClientPro
                     }
                   }}
                   disabled={promoStatus === "validating"}
+                  className="luxury-input text-sm"
                 />
                 <Button
                   variant="outline"
                   onClick={validatePromoCode}
                   disabled={!promoCode.trim() || promoStatus === "validating"}
+                  className="text-xs tracking-luxury uppercase shrink-0"
                 >
                   {promoStatus === "validating" ? (
                     <Loader2 className="w-4 h-4 animate-spin" />
@@ -181,173 +182,174 @@ export default function PaymentClient({ cartItems, userEmail }: PaymentClientPro
               </div>
 
               {promoStatus === "valid" && promoDetails && (
-                <div className="flex items-center gap-2 text-green-600 text-sm">
-                  <CheckCircle className="w-4 h-4" />
-                  <span>
+                <div className="flex items-center gap-2 text-emerald-600 dark:text-emerald-400 text-xs">
+                  <CheckCircle className="w-3.5 h-3.5" />
+                  <span className="font-light">
                     {promoDetails.percentOff
-                      ? `${promoDetails.percentOff}% off applied!`
-                      : `RM${promoDetails.amountOff} off applied!`
+                      ? `${promoDetails.percentOff}% discount applied`
+                      : `RM ${promoDetails.amountOff} discount applied`
                     }
                   </span>
                 </div>
               )}
 
               {promoStatus === "invalid" && (
-                <div className="flex items-center gap-2 text-red-600 text-sm">
-                  <AlertCircle className="w-4 h-4" />
-                  <span>Invalid or expired promo code</span>
+                <div className="flex items-center gap-2 text-destructive text-xs">
+                  <AlertCircle className="w-3.5 h-3.5" />
+                  <span className="font-light">Invalid or expired promo code</span>
                 </div>
               )}
 
-              <p className="text-xs text-muted-foreground">
-                💡 You can also enter promo codes directly at the Stripe checkout page
+              <p className="text-xs text-muted-foreground/70 font-light">
+                Promo codes can also be applied at Stripe checkout
               </p>
-            </CardContent>
-          </Card>
+            </div>
+          </div>
 
           {/* Payment Methods Info */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <CreditCard className="w-5 h-5" />
+          <div className="luxury-card overflow-hidden">
+            <div className="px-6 py-5 border-b border-border/40 flex items-center gap-3">
+              <CreditCard className="w-4 h-4 text-muted-foreground" />
+              <h3 className="text-sm tracking-luxury uppercase text-muted-foreground">
                 Accepted Payment Methods
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
+              </h3>
+            </div>
+            <div className="p-6 space-y-4">
               <div className="grid grid-cols-3 gap-3">
-                <div className="flex flex-col items-center p-3 border rounded-lg">
+                <div className="flex flex-col items-center p-4 border border-border/40 transition-colors hover:bg-muted/30">
                   <img
                     src="https://cdn.brandfetch.io/visa.com"
                     alt="Visa"
-                    className="h-6 w-auto object-contain mb-1"
+                    className="h-5 w-auto object-contain mb-2"
                   />
-                  <span className="text-xs text-muted-foreground">Visa</span>
+                  <span className="text-[10px] text-muted-foreground font-light">Visa</span>
                 </div>
-                <div className="flex flex-col items-center p-3 border rounded-lg">
+                <div className="flex flex-col items-center p-4 border border-border/40 transition-colors hover:bg-muted/30">
                   <img
                     src="https://cdn.brandfetch.io/mastercard.com"
                     alt="Mastercard"
-                    className="h-6 w-auto object-contain mb-1"
+                    className="h-5 w-auto object-contain mb-2"
                   />
-                  <span className="text-xs text-muted-foreground">Mastercard</span>
+                  <span className="text-[10px] text-muted-foreground font-light">Mastercard</span>
                 </div>
-                <div className="flex flex-col items-center p-3 border rounded-lg">
-                  <div className="h-6 flex items-center justify-center mb-1">
-                    <span className="text-sm font-bold text-green-600">FPX</span>
+                <div className="flex flex-col items-center p-4 border border-border/40 transition-colors hover:bg-muted/30">
+                  <div className="h-5 flex items-center justify-center mb-2">
+                    <span className="text-xs font-semibold text-emerald-600">FPX</span>
                   </div>
-                  <span className="text-xs text-muted-foreground">Online Banking</span>
+                  <span className="text-[10px] text-muted-foreground font-light">Online Banking</span>
                 </div>
               </div>
-              <p className="text-xs text-muted-foreground text-center">
-                Secure payments powered by Stripe
-              </p>
-            </CardContent>
-          </Card>
+              <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground/70">
+                <Shield className="w-3 h-3" />
+                <span className="font-light">Secured by Stripe</span>
+              </div>
+            </div>
+          </div>
         </div>
 
         {/* Right Column - Order Summary */}
         <div className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Receipt className="w-5 h-5" />
+          <div className="luxury-card overflow-hidden">
+            <div className="px-6 py-5 border-b border-border/40 flex items-center gap-3">
+              <Receipt className="w-4 h-4 text-muted-foreground" />
+              <h3 className="text-sm tracking-luxury uppercase text-muted-foreground">
                 Order Summary
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
+              </h3>
+            </div>
+            <div className="p-6 space-y-5">
               {/* Items */}
               <div className="space-y-3">
-                <h4 className="font-semibold text-sm">Items ({cartItems.length})</h4>
-                {cartItems.map((item) => (
-                  <div key={item.id} className="flex items-center gap-3 py-2 border-b last:border-b-0">
-                    <div className="w-12 h-12 bg-muted rounded flex items-center justify-center flex-shrink-0 overflow-hidden">
-                      {item.image ? (
-                        <img
-                          src={item.image}
-                          alt={item.name}
-                          className="w-full h-full object-cover"
-                        />
-                      ) : (
-                        <ShirtIcon className="w-6 h-6 text-muted-foreground" />
-                      )}
+                <p className="text-xs text-muted-foreground font-light">
+                  {cartItems.length} {cartItems.length === 1 ? 'item' : 'items'}
+                </p>
+                <div className="divide-y divide-border/30">
+                  {cartItems.map((item) => (
+                    <div key={item.id} className="flex items-center gap-3 py-3 first:pt-0 last:pb-0">
+                      <div className="w-14 h-16 bg-muted/50 flex items-center justify-center flex-shrink-0 overflow-hidden">
+                        {item.image ? (
+                          <img
+                            src={item.image}
+                            alt={item.name}
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <ShirtIcon className="w-5 h-5 text-muted-foreground/40" />
+                        )}
+                      </div>
+                      <div className="flex-1 min-w-0 space-y-0.5">
+                        <p className="text-sm font-medium tracking-tight truncate">{item.name}</p>
+                        <p className="text-xs text-muted-foreground font-light">
+                          {item.size} · {item.color} · Qty: {item.quantity}
+                        </p>
+                      </div>
+                      <p className="text-sm font-medium">RM {(item.price * item.quantity).toFixed(2)}</p>
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="font-medium text-sm truncate">{item.name}</p>
-                      <p className="text-xs text-muted-foreground">
-                        {item.size} • {item.color} • Qty: {item.quantity}
-                      </p>
-                    </div>
-                    <p className="font-semibold text-sm">RM{(item.price * item.quantity).toFixed(2)}</p>
-                  </div>
-                ))}
+                  ))}
+                </div>
               </div>
 
+              <div className="gold-divider" />
+
               {/* Pricing */}
-              <div className="space-y-2 pt-4 border-t">
-                <div className="flex justify-between text-sm">
-                  <span>Subtotal</span>
-                  <span>RM{subtotal.toFixed(2)}</span>
+              <div className="space-y-3 text-sm">
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground font-light">Subtotal</span>
+                  <span className="font-medium">RM {subtotal.toFixed(2)}</span>
                 </div>
                 {discount > 0 && (
-                  <div className="flex justify-between text-sm text-green-600">
-                    <span>Discount</span>
-                    <span>-RM{discount.toFixed(2)}</span>
+                  <div className="flex justify-between text-emerald-600 dark:text-emerald-400">
+                    <span className="font-light">Discount</span>
+                    <span className="font-medium">−RM {discount.toFixed(2)}</span>
                   </div>
                 )}
-                <div className="flex justify-between text-sm">
-                  <span>Tax (8%)</span>
-                  <span>RM{tax.toFixed(2)}</span>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground font-light">Tax (8%)</span>
+                  <span className="font-medium">RM {tax.toFixed(2)}</span>
                 </div>
-                <div className="flex justify-between text-sm">
-                  <span>Shipping</span>
-                  <span>{baseShipping === 0 ? 'Free' : `RM${baseShipping.toFixed(2)}`}</span>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground font-light">Shipping</span>
+                  <span className="font-medium">{baseShipping === 0 ? 'Complimentary' : `RM ${baseShipping.toFixed(2)}`}</span>
                 </div>
-                <hr />
-                <div className="flex justify-between text-lg font-semibold">
-                  <span>Estimated Total</span>
-                  <span>RM{total.toFixed(2)}</span>
+                <div className="gold-divider my-4" />
+                <div className="flex justify-between text-base">
+                  <span className="font-medium">Estimated Total</span>
+                  <span className="font-semibold">RM {total.toFixed(2)}</span>
                 </div>
-                <p className="text-xs text-muted-foreground">
-                  Final amount may vary based on shipping address
-                </p>
               </div>
 
               {/* Error Message */}
               {error && (
-                <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
+                <div className="bg-destructive/10 border border-destructive/20 text-destructive px-4 py-3 text-xs font-light">
                   {error}
                 </div>
               )}
 
               {/* Checkout Button */}
-              <div className="pt-4">
-                <Button
-                  onClick={handleCheckout}
-                  disabled={isProcessing || cartItems.length === 0}
-                  className="w-full"
-                  size="lg"
-                >
-                  {isProcessing ? (
-                    <div className="flex items-center gap-2">
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                      Redirecting to Stripe...
-                    </div>
-                  ) : (
-                    <>
-                      <Shield className="w-4 h-4 mr-2" />
-                      Proceed to Secure Checkout
-                      <ExternalLink className="w-4 h-4 ml-2" />
-                    </>
-                  )}
-                </Button>
-              </div>
+              <Button
+                onClick={handleCheckout}
+                disabled={isProcessing || cartItems.length === 0}
+                className="w-full h-14 text-xs tracking-luxury uppercase font-medium transition-all duration-300"
+              >
+                {isProcessing ? (
+                  <div className="flex items-center gap-2">
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    Redirecting to Stripe...
+                  </div>
+                ) : (
+                  <>
+                    <Shield className="w-4 h-4 mr-2" />
+                    Proceed to Secure Checkout
+                    <ExternalLink className="w-3.5 h-3.5 ml-2" />
+                  </>
+                )}
+              </Button>
 
-              <div className="text-xs text-muted-foreground text-center space-y-1">
-                <p>🔒 You will be redirected to Stripe's secure checkout</p>
+              <div className="text-[10px] text-muted-foreground/70 text-center space-y-1 font-light">
+                <p>You will be redirected to Stripe's secure checkout</p>
                 <p>Your payment details are never stored on our servers</p>
               </div>
-            </CardContent>
-          </Card>
+            </div>
+          </div>
         </div>
       </div>
     </div>

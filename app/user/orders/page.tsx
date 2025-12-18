@@ -1,24 +1,24 @@
 import { getCachedUserProfile } from "@/lib/rbac";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { PackageIcon, Calendar } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
+import { PackageIcon, Calendar, ArrowUpRight } from "lucide-react";
+import Link from "next/link";
+import { Button } from "@/components/ui/button";
 
 export const dynamic = 'force-dynamic';
 
-function getStatusVariant(status: string) {
+function getStatusStyle(status: string) {
   switch (status) {
     case 'delivered':
-      return 'default'; // Green/Primary
+      return 'luxury-badge luxury-badge-success';
     case 'shipped':
-      return 'secondary'; // Gray
+      return 'luxury-badge luxury-badge-info';
     case 'processing':
-      return 'outline'; // Outline
+      return 'luxury-badge luxury-badge-warning';
     case 'cancelled':
-      return 'destructive'; // Red
+      return 'luxury-badge bg-destructive/10 text-destructive border border-destructive/20';
     default:
-      return 'secondary'; // Pending
+      return 'luxury-badge bg-muted text-muted-foreground border border-border';
   }
 }
 
@@ -44,63 +44,76 @@ export default async function OrdersPage() {
   }
 
   return (
-    <div className="flex flex-col gap-6 sm:gap-8">
-      <div>
-        <h1 className="text-2xl sm:text-3xl font-bold mb-2">My Orders</h1>
-        <p className="text-sm sm:text-base text-muted-foreground">
-          Track your order history and status
-        </p>
+    <div className="flex flex-col gap-8 sm:gap-10 max-w-6xl mx-auto">
+      {/* Luxury Page Header */}
+      <div className="luxury-page-header">
+        <span className="label">Order History</span>
+        <h1>My Orders</h1>
+        <p>Track and review your purchase history</p>
+        <div className="gold-divider mt-6" />
       </div>
 
-      <div className="space-y-6">
+      <div className="space-y-5">
         {!orders || orders.length === 0 ? (
-          <Card>
-            <CardContent className="pt-6">
-              <div className="flex flex-col items-center justify-center py-12">
-                <PackageIcon className="w-16 h-16 text-muted-foreground mb-4" />
-                <p className="text-muted-foreground text-center">
-                  No orders yet. Start shopping to place your first order!
-                </p>
+          <div className="luxury-card p-8">
+            <div className="luxury-empty-state">
+              <div className="icon-wrapper">
+                <PackageIcon className="w-10 h-10 text-muted-foreground/50" />
               </div>
-            </CardContent>
-          </Card>
+              <p>Your order history is empty. Discover our collection and place your first order.</p>
+              <Link href="/user">
+                <Button variant="outline" className="mt-6 text-xs tracking-luxury uppercase">
+                  Browse Collection
+                </Button>
+              </Link>
+            </div>
+          </div>
         ) : (
           orders.map((order) => (
-            <Card key={order.id}>
-              <CardHeader>
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                  <div>
-                    <CardTitle className="text-base sm:text-lg">Order #{order.id.slice(0, 8)}</CardTitle>
-                    <CardDescription className="flex items-center gap-2 mt-1 text-xs sm:text-sm">
-                      <Calendar className="w-3 h-3 sm:w-4 sm:h-4" />
-                      {new Date(order.created_at).toLocaleDateString()}
-                    </CardDescription>
+            <div key={order.id} className="luxury-card overflow-hidden">
+              {/* Order Header */}
+              <div className="px-6 py-5 border-b border-border/40 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div className="space-y-1">
+                  <div className="flex items-center gap-3">
+                    <h3 className="text-sm font-medium tracking-tight">
+                      Order #{order.id.slice(0, 8).toUpperCase()}
+                    </h3>
+                    <span className={getStatusStyle(order.status)}>
+                      {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
+                    </span>
                   </div>
-                  <Badge variant={getStatusVariant(order.status) as "default" | "secondary" | "destructive" | "outline"}>
-                    {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
-                  </Badge>
+                  <p className="text-xs text-muted-foreground font-light flex items-center gap-1.5">
+                    <Calendar className="w-3 h-3" />
+                    {new Date(order.created_at).toLocaleDateString('en-US', {
+                      year: 'numeric',
+                      month: 'long',
+                      day: 'numeric'
+                    })}
+                  </p>
                 </div>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  <div className="border-t pt-4">
-                    {order.order_items.map((item: any) => (
-                      <div key={item.id} className="flex flex-col sm:flex-row justify-between py-2 gap-1 sm:gap-0">
-                        <div>
-                          <p className="font-medium text-sm sm:text-base">{item.product_name}</p>
-                          <p className="text-xs sm:text-sm text-muted-foreground">{item.variant_info} x {item.quantity}</p>
-                        </div>
-                        <p className="font-medium text-sm sm:text-base">RM{item.unit_price.toFixed(2)}</p>
-                      </div>
-                    ))}
+              </div>
+
+              {/* Order Items */}
+              <div className="divide-y divide-border/30">
+                {order.order_items.map((item: any) => (
+                  <div key={item.id} className="px-6 py-4 flex flex-col sm:flex-row justify-between gap-2">
+                    <div className="space-y-0.5">
+                      <p className="text-sm font-medium tracking-tight">{item.product_name}</p>
+                      <p className="text-xs text-muted-foreground font-light">
+                        {item.variant_info} · Qty: {item.quantity}
+                      </p>
+                    </div>
+                    <p className="text-sm font-medium">RM {item.unit_price.toFixed(2)}</p>
                   </div>
-                  <div className="border-t pt-4 flex justify-between font-bold text-sm sm:text-base">
-                    <span>Total</span>
-                    <span>RM{order.total_amount.toFixed(2)}</span>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+                ))}
+              </div>
+
+              {/* Order Total */}
+              <div className="px-6 py-4 bg-muted/30 flex justify-between items-center">
+                <span className="text-sm text-muted-foreground font-light">Total</span>
+                <span className="text-base font-semibold">RM {order.total_amount.toFixed(2)}</span>
+              </div>
+            </div>
           ))
         )}
       </div>

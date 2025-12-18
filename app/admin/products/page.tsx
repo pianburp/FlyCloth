@@ -6,6 +6,7 @@ import { ShirtIcon, PlusIcon, Pencil, Trash2, Package, TicketPercent, ExternalLi
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
+import { StripeGuideSheet } from "./stripe-guide-sheet";
 
 export const dynamic = 'force-dynamic';
 
@@ -83,42 +84,16 @@ export default async function ProductsPage() {
             Manage your shirt inventory and pricing
           </p>
         </div>
-        <Link href="/admin/products/add">
-          <Button className="w-full sm:w-auto">
-            <PlusIcon className="w-4 h-4 mr-2" />
-            Add Product
-          </Button>
-        </Link>
+        <div className="flex gap-2 w-full sm:w-auto">
+          <StripeGuideSheet />
+          <Link href="/admin/products/add">
+            <Button className="flex-1 sm:flex-none">
+              <PlusIcon className="w-4 h-4 mr-2" />
+              Add Product
+            </Button>
+          </Link>
+        </div>
       </div>
-
-      {/* Stripe Integration Status Banner */}
-      <Card className="border-blue-200 bg-blue-50/50">
-        <CardContent className="py-4">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
-                <Zap className="w-5 h-5 text-blue-600" />
-              </div>
-              <div>
-                <p className="font-medium text-blue-900">Stripe Integration Active</p>
-                <p className="text-sm text-blue-700">
-                  {syncedCount} of {products.length} products synced to Stripe
-                </p>
-              </div>
-            </div>
-            <a
-              href="https://dashboard.stripe.com/products"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              <Button variant="outline" size="sm" className="border-blue-300 text-blue-700 hover:bg-blue-100">
-                View in Stripe Dashboard
-                <ExternalLink className="w-4 h-4 ml-2" />
-              </Button>
-            </a>
-          </div>
-        </CardContent>
-      </Card>
 
       <Card>
         <CardHeader>
@@ -213,63 +188,6 @@ export default async function ProductsPage() {
               })}
             </div>
           )}
-        </CardContent>
-      </Card>
-
-      {/* Coupons - Now managed via Stripe */}
-      <Card>
-        <CardHeader className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div>
-            <CardTitle className="flex items-center gap-2">
-              <TicketPercent className="w-5 h-5" />
-              Promotion Codes
-            </CardTitle>
-            <CardDescription>
-              Manage discount codes directly in Stripe Dashboard
-            </CardDescription>
-          </div>
-          <a
-            href="https://dashboard.stripe.com/coupons"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Button variant="default" size="sm" className="w-full sm:w-auto">
-              <ExternalLink className="w-4 h-4 mr-2" />
-              Manage in Stripe
-            </Button>
-          </a>
-        </CardHeader>
-        <CardContent>
-          <div className="bg-muted/50 rounded-lg p-6 text-center">
-            <TicketPercent className="w-12 h-12 mx-auto mb-4 opacity-50 text-blue-600" />
-            <h3 className="font-semibold mb-2">Coupons are now managed via Stripe</h3>
-            <p className="text-sm text-muted-foreground mb-4 max-w-md mx-auto">
-              Create and manage discount codes directly in the Stripe Dashboard.
-              This gives you more control, better analytics, and automatic validation at checkout.
-            </p>
-            <div className="flex flex-col sm:flex-row gap-3 justify-center">
-              <a
-                href="https://dashboard.stripe.com/coupons"
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                <Button variant="outline">
-                  Create Coupon
-                  <ExternalLink className="w-4 h-4 ml-2" />
-                </Button>
-              </a>
-              <a
-                href="https://dashboard.stripe.com/promotion_codes"
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                <Button variant="outline">
-                  View Promotion Codes
-                  <ExternalLink className="w-4 h-4 ml-2" />
-                </Button>
-              </a>
-            </div>
-          </div>
         </CardContent>
       </Card>
     </div>

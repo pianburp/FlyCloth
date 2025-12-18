@@ -1,11 +1,10 @@
-import { EnvVarWarning } from "@/components/shared";
 import { AuthButton } from "@/components/auth";
 import { ThemeSwitcher } from "@/components/layout";
 import { hasEnvVars } from "@/lib/utils";
 import Link from "next/link";
 import { Suspense } from "react";
 import { Hero, Features, ContactUs } from "@/components/marketing";
-import { Menu, Search, ShoppingBag, User } from "lucide-react";
+import { Menu, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { RootLayoutWrapper } from "@/components/layout/root-layout-wrapper";
 import { getCachedUserProfile } from "@/lib/rbac";
@@ -72,21 +71,9 @@ export default async function Home() {
 
             {/* Right Navigation */}
             <div className="flex items-center gap-4 lg:gap-6">
-              {!hasEnvVars ? (
-                <EnvVarWarning />
-              ) : (
                 <Suspense fallback={<Button variant="ghost" size="icon"><User className="w-4 h-4" /></Button>}>
                   <AuthButton />
                 </Suspense>
-              )}
-
-              <Link href="/user/cart" className="relative">
-                <ShoppingBag className="w-4 h-4" />
-                <span className="absolute -top-1 -right-1 w-4 h-4 bg-foreground text-background rounded-full text-[10px] flex items-center justify-center font-medium">
-                  0
-                </span>
-              </Link>
-
               <ThemeSwitcher />
             </div>
           </div>
@@ -104,107 +91,6 @@ export default async function Home() {
         {/* Editorial/Newsletter/Contact Section */}
         <ContactUs />
       </div>
-
-      {/* Luxury Footer */}
-      <footer className="w-full border-t border-border/30 bg-background">
-        {/* Main Footer Content */}
-        <div className="container mx-auto px-6 lg:px-12 py-16">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-12">
-            {/* Brand */}
-            <div className="lg:col-span-2">
-              <Link href="/" className="inline-block mb-6">
-                <span className="text-2xl font-light tracking-tight">FlyCloth</span>
-              </Link>
-              <p className="text-sm text-muted-foreground font-light leading-relaxed max-w-xs">
-                A house of unparalleled craftsmanship, where tradition meets contemporary elegance
-                to create timeless masterpieces.
-              </p>
-            </div>
-
-            {/* Shop */}
-            <div>
-              <h4 className="text-xs tracking-luxury uppercase text-muted-foreground mb-6">Shop</h4>
-              <ul className="space-y-3">
-                {["New Arrivals", "Ready-to-Wear", "Haute Couture", "Accessories", "Limited Edition"].map((item) => (
-                  <li key={item}>
-                    <Link
-                      href="#"
-                      className="text-sm font-light text-foreground/70 hover:text-foreground transition-colors duration-300"
-                    >
-                      {item}
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            </div>
-
-            {/* Services */}
-            <div>
-              <h4 className="text-xs tracking-luxury uppercase text-muted-foreground mb-6">Services</h4>
-              <ul className="space-y-3">
-                {["Private Appointments", "Made to Measure", "Gift Services", "Alterations", "Care & Repairs"].map((item) => (
-                  <li key={item}>
-                    <Link
-                      href="#"
-                      className="text-sm font-light text-foreground/70 hover:text-foreground transition-colors duration-300"
-                    >
-                      {item}
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            </div>
-
-            {/* About */}
-            <div>
-              <h4 className="text-xs tracking-luxury uppercase text-muted-foreground mb-6">About</h4>
-              <ul className="space-y-3">
-                {["Our Story", "Craftsmanship", "Sustainability", "Careers", "Contact"].map((item) => (
-                  <li key={item}>
-                    <Link
-                      href="#"
-                      className="text-sm font-light text-foreground/70 hover:text-foreground transition-colors duration-300"
-                    >
-                      {item}
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          </div>
-        </div>
-
-        {/* Bottom Footer */}
-        <div className="border-t border-border/30">
-          <div className="container mx-auto px-6 lg:px-12 py-6">
-            <div className="flex flex-col md:flex-row items-center justify-between gap-4">
-              <p className="text-xs text-muted-foreground/60">
-                © 2025 FlyCloth. All rights reserved.
-              </p>
-              <div className="flex items-center gap-6">
-                <Link
-                  href="/privacy"
-                  className="text-xs text-muted-foreground/60 hover:text-foreground transition-colors duration-300"
-                >
-                  Privacy Policy
-                </Link>
-                <Link
-                  href="/terms"
-                  className="text-xs text-muted-foreground/60 hover:text-foreground transition-colors duration-300"
-                >
-                  Terms of Service
-                </Link>
-                <Link
-                  href="/cookies"
-                  className="text-xs text-muted-foreground/60 hover:text-foreground transition-colors duration-300"
-                >
-                  Cookie Settings
-                </Link>
-              </div>
-            </div>
-          </div>
-        </div>
-      </footer>
     </main>
   );
 }

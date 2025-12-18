@@ -60,8 +60,8 @@ export function CartManagement({ initialItems, userId }: CartManagementProps) {
 
   const handleQuantityChange = async (id: string, quantity: number) => {
     // Optimistic update
-    setCartItems(items => 
-      items.map(item => 
+    setCartItems(items =>
+      items.map(item =>
         item.id === id ? { ...item, quantity } : item
       )
     );
@@ -102,20 +102,19 @@ export function CartManagement({ initialItems, userId }: CartManagementProps) {
 
   if (cartItems.length === 0) {
     return (
-      <Card>
-        <CardHeader>
-          <CardTitle>Your Cart</CardTitle>
-          <CardDescription>Items ready for checkout</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="flex flex-col items-center justify-center py-12">
-            <ShoppingCart className="w-16 h-16 text-muted-foreground mb-4" />
-            <p className="text-muted-foreground text-center">
-              Your cart is empty. Start shopping to add items!
-            </p>
+      <div className="luxury-card p-8">
+        <div className="luxury-empty-state">
+          <div className="icon-wrapper">
+            <ShoppingCart className="w-10 h-10 text-muted-foreground/50" />
           </div>
-        </CardContent>
-      </Card>
+          <p>Your cart awaits. Explore our collection to discover your next favorite piece.</p>
+          <Link href="/user">
+            <Button variant="outline" className="mt-6 text-xs tracking-luxury uppercase">
+              Browse Collection
+            </Button>
+          </Link>
+        </div>
+      </div>
     );
   }
 
@@ -123,11 +122,13 @@ export function CartManagement({ initialItems, userId }: CartManagementProps) {
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8">
       {/* Cart Items */}
       <div className="lg:col-span-2 space-y-4">
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg sm:text-xl">Cart Items ({cartItems.length})</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4 px-3 sm:px-6">
+        <div className="luxury-card overflow-hidden">
+          <div className="px-6 py-5 border-b border-border/40">
+            <h3 className="text-sm tracking-luxury uppercase text-muted-foreground">
+              Items ({cartItems.length})
+            </h3>
+          </div>
+          <div className="divide-y divide-border/30">
             {cartItems.map((item) => (
               <CartItemComponent
                 key={item.id}
@@ -136,71 +137,78 @@ export function CartManagement({ initialItems, userId }: CartManagementProps) {
                 onRemove={handleRemoveItem}
               />
             ))}
-          </CardContent>
-        </Card>
+          </div>
+        </div>
       </div>
 
       {/* Order Summary */}
       <div className="space-y-4">
-        <Card>
-          <CardHeader>
-            <CardTitle>Order Summary</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-2">
+        <div className="luxury-card overflow-hidden">
+          <div className="px-6 py-5 border-b border-border/40">
+            <h3 className="text-sm tracking-luxury uppercase text-muted-foreground">
+              Order Summary
+            </h3>
+          </div>
+          <div className="p-6 space-y-5">
+            <div className="space-y-3 text-sm">
               <div className="flex justify-between">
-                <span>Subtotal</span>
-                <span>RM{subtotal.toFixed(2)}</span>
+                <span className="text-muted-foreground font-light">Subtotal</span>
+                <span className="font-medium">RM {subtotal.toFixed(2)}</span>
               </div>
               <div className="flex justify-between">
-                <span>Tax</span>
-                <span>RM{tax.toFixed(2)}</span>
+                <span className="text-muted-foreground font-light">Tax (8%)</span>
+                <span className="font-medium">RM {tax.toFixed(2)}</span>
               </div>
               <div className="flex justify-between">
-                <span>Shipping</span>
-                <span>{shipping === 0 ? 'Free' : `RM${shipping.toFixed(2)}`}</span>
+                <span className="text-muted-foreground font-light">Shipping</span>
+                <span className="font-medium">{shipping === 0 ? 'Complimentary' : `RM ${shipping.toFixed(2)}`}</span>
               </div>
-              <hr />
-              <div className="flex justify-between text-lg font-semibold">
-                <span>Total</span>
-                <span>RM{total.toFixed(2)}</span>
+              <div className="gold-divider my-4" />
+              <div className="flex justify-between text-base">
+                <span className="font-medium">Total</span>
+                <span className="font-semibold">RM {total.toFixed(2)}</span>
               </div>
             </div>
 
-            <div className="pt-4">
-              <Link href="/user/cart/payment">
-                <Button className="w-full" size="lg">
-                  Proceed to Checkout
-                </Button>
-              </Link>
-            </div>
+            <Link href="/user/cart/payment" className="block">
+              <Button className="w-full h-12 text-xs tracking-luxury uppercase font-medium bg-primary hover:bg-primary/90 transition-all duration-300">
+                Proceed to Checkout
+              </Button>
+            </Link>
 
-            <div className="text-xs text-muted-foreground text-center">
-              {shipping > 0 && (
-                <p>Add RM{(50 - subtotal).toFixed(2)} more for free shipping!</p>
-              )}
-            </div>
-          </CardContent>
-        </Card>
+            {shipping > 0 && (
+              <p className="text-xs text-center text-muted-foreground font-light">
+                Add RM {(50 - subtotal).toFixed(2)} more for complimentary shipping
+              </p>
+            )}
+          </div>
+        </div>
 
         {/* Promo Code */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">Promo Code</CardTitle>
-          </CardHeader>
-          <CardContent>
+        <div className="luxury-card overflow-hidden">
+          <div className="px-6 py-4 border-b border-border/40">
+            <h3 className="text-sm tracking-luxury uppercase text-muted-foreground">
+              Promo Code
+            </h3>
+          </div>
+          <div className="p-6">
             <div className="flex gap-2">
-              <Input 
-                placeholder="Enter code" 
+              <Input
+                placeholder="Enter code"
                 value={couponCode}
                 onChange={(e) => setCouponCode(e.target.value)}
+                className="luxury-input text-sm"
               />
-              <Button variant="outline" onClick={handleApplyCoupon}>
+              <Button
+                variant="outline"
+                onClick={handleApplyCoupon}
+                className="text-xs tracking-luxury uppercase shrink-0"
+              >
                 Apply
               </Button>
             </div>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
       </div>
     </div>
   );

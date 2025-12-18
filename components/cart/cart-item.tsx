@@ -38,67 +38,72 @@ export function CartItemComponent({ item, onQuantityChange, onRemove }: CartItem
   };
 
   return (
-    <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 p-4 border rounded-lg">
-      <Link href={`/user/products/${item.productId}`} className="flex-shrink-0 w-full sm:w-auto">
-        <div className="w-full sm:w-20 h-32 sm:h-20 bg-muted rounded-md flex items-center justify-center overflow-hidden hover:opacity-80 transition-opacity">
+    <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 p-5 transition-colors hover:bg-muted/30">
+      {/* Product Image */}
+      <Link href={`/user/products/${item.productId}`} className="flex-shrink-0 w-full sm:w-auto group">
+        <div className="w-full sm:w-24 h-32 sm:h-28 bg-muted/50 flex items-center justify-center overflow-hidden transition-all duration-300 group-hover:shadow-md">
           {item.image ? (
-            <img 
-              src={item.image} 
-              alt={item.name} 
-              className="w-full h-full object-cover"
+            <img
+              src={item.image}
+              alt={item.name}
+              className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
             />
           ) : (
-            <ShirtIcon className="w-8 h-8 text-muted-foreground" />
+            <ShirtIcon className="w-8 h-8 text-muted-foreground/40" />
           )}
         </div>
       </Link>
-      
-      <div className="flex-1 w-full sm:w-auto">
-        <Link href={`/user/products/${item.productId}`} className="hover:underline">
-          <h3 className="font-semibold">{item.name}</h3>
+
+      {/* Product Details */}
+      <div className="flex-1 w-full sm:w-auto space-y-1">
+        <Link href={`/user/products/${item.productId}`} className="group">
+          <h3 className="font-medium text-sm sm:text-base tracking-tight group-hover:text-muted-foreground transition-colors">
+            {item.name}
+          </h3>
         </Link>
-        <p className="text-sm text-muted-foreground">
-          Size: {item.size} • Color: {item.color}
+        <p className="text-xs text-muted-foreground font-light tracking-wide">
+          {item.size} · {item.color}
         </p>
-        <p className="font-bold text-lg">RM{item.price.toFixed(2)}</p>
+        <p className="text-sm font-medium mt-1">RM {item.price.toFixed(2)}</p>
       </div>
-      
-      <div className="flex items-center justify-between w-full sm:w-auto gap-4">
-        <div className="flex items-center gap-2">
-          <Button 
-            variant="outline" 
-            size="icon" 
-            className="w-8 h-8"
+
+      {/* Quantity & Actions */}
+      <div className="flex items-center justify-between w-full sm:w-auto gap-6">
+        <div className="flex items-center gap-1.5">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="w-8 h-8 hover:bg-muted"
             onClick={() => handleQuantityChange(quantity - 1)}
           >
-            <Minus className="w-4 h-4" />
+            <Minus className="w-3.5 h-3.5" />
           </Button>
-          <Input 
-            type="number" 
+          <Input
+            type="number"
             value={quantity}
             onChange={handleInputChange}
-            className="w-14 sm:w-16 text-center"
+            className="w-12 text-center text-sm h-8 luxury-input"
             min="1"
           />
-          <Button 
-            variant="outline" 
-            size="icon" 
-            className="w-8 h-8"
+          <Button
+            variant="ghost"
+            size="icon"
+            className="w-8 h-8 hover:bg-muted"
             onClick={() => handleQuantityChange(quantity + 1)}
           >
-            <Plus className="w-4 h-4" />
+            <Plus className="w-3.5 h-3.5" />
           </Button>
         </div>
-        
-        <div className="text-right flex items-center gap-2 sm:flex-col sm:gap-0">
-          <p className="font-semibold">RM{(item.price * quantity).toFixed(2)}</p>
-          <Button 
-            variant="ghost" 
-            size="sm" 
-            className="text-red-600 hover:text-red-700"
+
+        <div className="text-right flex items-center gap-3 sm:flex-col sm:items-end sm:gap-1">
+          <p className="font-medium text-sm">RM {(item.price * quantity).toFixed(2)}</p>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="text-muted-foreground hover:text-destructive h-7 px-2"
             onClick={() => onRemove(item.id)}
           >
-            <Trash2 className="w-4 h-4" />
+            <Trash2 className="w-3.5 h-3.5" />
           </Button>
         </div>
       </div>

@@ -5,7 +5,7 @@ import { SidebarProvider, SidebarTrigger, SidebarInset } from "@/components/ui/s
 import Link from "next/link";
 import { Suspense } from "react";
 import { getCachedUserProfile } from "@/lib/rbac";
-import { AdminPageSkeleton } from "@/components/shared";
+import { AdminPageSkeleton } from "@/components/shared/page-skeleton";
 
 export default async function AdminLayout({
   children,

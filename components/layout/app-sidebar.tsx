@@ -12,8 +12,7 @@ import {
     SidebarMenu,
     SidebarMenuButton,
     SidebarMenuItem,
-    SidebarSeparator,
-    useSidebar,
+    SidebarSeparator
 } from "@/components/ui/sidebar";
 import {
     Shirt,
@@ -23,7 +22,6 @@ import {
     LayoutDashboard,
     FileText,
     Home,
-    Users,
     User,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
@@ -49,7 +47,6 @@ const adminNavItems = [
     { title: "Dashboard", href: "/admin", icon: LayoutDashboard },
     { title: "Products", href: "/admin/products", icon: Shirt },
     { title: "Orders", href: "/admin/orders", icon: FileText },
-    { title: "Users", href: "/admin/users", icon: Users },
     { title: "Settings", href: "/admin/settings", icon: Settings },
 ];
 
