@@ -1,20 +1,28 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { LogOut, LogIn, UserPlus } from "lucide-react";
-import { useRouter } from "next/navigation";
+import { LogOut, LogIn, UserPlus, Loader2 } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
 
 export function AuthButton() {
   const { user, isLoading, signOut } = useAuth();
-  const router = useRouter();
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
 
   const handleLogout = async () => {
-    await signOut();
-    router.push("/");
-    router.refresh();
+    if (isLoggingOut) return; // Prevent double-clicks
+
+    setIsLoggingOut(true);
+    try {
+      await signOut();
+      // Use full page reload to ensure fresh server-rendered auth state
+      window.location.href = "/";
+    } catch (error) {
+      console.error("Logout failed:", error);
+      setIsLoggingOut(false);
+    }
   };
 
   if (isLoading) {
@@ -68,15 +76,23 @@ export function AuthButton() {
       </div>
 
       {/* Mobile: Icon-only logout button */}
-      <Button size="icon" variant="ghost" onClick={handleLogout} className="sm:hidden h-8 w-8">
-        <LogOut className="w-4 h-4 text-muted-foreground" />
+      <Button size="icon" variant="ghost" onClick={handleLogout} disabled={isLoggingOut} className="sm:hidden h-8 w-8">
+        {isLoggingOut ? (
+          <Loader2 className="w-4 h-4 animate-spin" />
+        ) : (
+          <LogOut className="w-4 h-4 text-muted-foreground" />
+        )}
         <span className="sr-only">Logout</span>
       </Button>
 
       {/* Desktop: Full logout button with text */}
-      <Button size="sm" variant="ghost" onClick={handleLogout} className="hidden sm:inline-flex">
-        <LogOut className="w-4 h-4 mr-2 text-muted-foreground" />
-        Logout
+      <Button size="sm" variant="ghost" onClick={handleLogout} disabled={isLoggingOut} className="hidden sm:inline-flex">
+        {isLoggingOut ? (
+          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+        ) : (
+          <LogOut className="w-4 h-4 mr-2 text-muted-foreground" />
+        )}
+        {isLoggingOut ? "Logging out..." : "Logout"}
       </Button>
     </div>
   );

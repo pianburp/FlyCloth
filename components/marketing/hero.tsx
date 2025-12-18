@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
 import { ChevronDown } from "lucide-react";
@@ -66,14 +65,14 @@ export function Hero() {
             asChild
             className="bg-white text-black hover:bg-white/90 px-8 py-6 text-xs tracking-luxury uppercase font-medium transition-all duration-300"
           >
-            <Link href="/shop">Explore Collection</Link>
+            <Link href="#features">Explore Collection</Link>
           </Button>
           <Button
             asChild
             variant="ghost"
             className="text-white border border-white/30 hover:bg-white/10 hover:text-white px-8 py-6 text-xs tracking-luxury uppercase font-medium transition-all duration-300"
           >
-            <Link href="/lookbook">View Lookbook</Link>
+            <Link href="#contact">Contact Us</Link>
           </Button>
         </motion.div>
       </div>

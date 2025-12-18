@@ -16,7 +16,6 @@ export default async function SettingsPage() {
     <div className="flex flex-col gap-8 sm:gap-10 max-w-6xl mx-auto">
       {/* Luxury Page Header */}
       <div className="luxury-page-header">
-        <span className="label">Account</span>
         <h1>Settings</h1>
         <p>Manage your profile and account preferences</p>
         <div className="gold-divider mt-6" />

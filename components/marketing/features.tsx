@@ -75,7 +75,7 @@ export function Features() {
   const opacity = useTransform(scrollYProgress, [0, 0.2, 0.8, 1], [0, 1, 1, 0]);
 
   return (
-    <section ref={containerRef} className="w-full py-32 bg-background overflow-hidden">
+    <section ref={containerRef} className="w-full py-32 bg-background overflow-hidden" id="features">
       {/* Collections Grid */}
       <div className="container mx-auto px-6 lg:px-12 mb-32">
         <motion.div

@@ -67,7 +67,6 @@ export default async function CartPage() {
     <div className="flex flex-col gap-8 sm:gap-10 max-w-6xl mx-auto">
       {/* Luxury Page Header */}
       <div className="luxury-page-header">
-        <span className="label">Your Selection</span>
         <h1>Shopping Cart</h1>
         <p>Review your curated pieces before checkout</p>
         <div className="gold-divider mt-6" />

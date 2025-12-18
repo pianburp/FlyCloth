@@ -30,13 +30,6 @@ export default async function Home() {
       <SidebarProvider defaultOpen={false}>
         <AppSidebar />
         <SidebarInset>
-          {/* Announcement Bar */}
-          <div className="bg-black text-white py-2 text-center">
-            <p className="text-xs tracking-luxury uppercase">
-              Complimentary Shipping on Orders Over RM 500
-            </p>
-          </div>
-
           {/* Header - Consistent with authenticated layout */}
           <header className="w-full flex justify-between items-center border-b border-b-foreground/10 h-14 sm:h-16 px-2 sm:px-4 sticky top-0 bg-background/95 backdrop-blur-md z-50">
             <div className="flex items-center gap-2 sm:gap-4">
@@ -67,7 +60,7 @@ export default async function Home() {
             {/* Features/Collections Section */}
             <Features />
 
-            {/* Editorial/Newsletter/Contact Section */}
+            {/*Contact Section */}
             <ContactUs />
           </main>
 

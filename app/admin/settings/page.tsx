@@ -71,52 +71,6 @@ export default async function SettingsPage() {
           </CardContent>
         </Card>
       </div>
-
-      {/* Admin Role Information Card */}
-      <Card>
-        <CardHeader>
-          <div className="flex items-center gap-2">
-            <Shield className="w-5 h-5 text-primary" />
-            <CardTitle>Admin Role</CardTitle>
-          </div>
-          <CardDescription>
-            Your current role and permissions
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            <div className="flex items-center gap-3">
-              <span className="text-sm font-medium">Current Role:</span>
-              <Badge variant="default" className="capitalize">
-                {profile.role}
-              </Badge>
-            </div>
-
-            <div className="rounded-lg bg-muted/50 p-4 space-y-2">
-              <div className="flex items-start gap-2">
-                <Info className="w-4 h-4 text-muted-foreground mt-0.5" />
-                <div className="text-sm text-muted-foreground">
-                  <p className="font-medium text-foreground mb-1">Admin Privileges</p>
-                  <ul className="list-disc list-inside space-y-1">
-                    <li>Manage all products and inventory</li>
-                    <li>View and process customer orders</li>
-                    <li>Access store analytics and reports</li>
-                    <li>Configure store settings</li>
-                  </ul>
-                </div>
-              </div>
-            </div>
-
-            <p className="text-xs text-muted-foreground">
-              Account created on {new Date(profile.created_at).toLocaleDateString('en-US', {
-                year: 'numeric',
-                month: 'long',
-                day: 'numeric'
-              })}
-            </p>
-          </div>
-        </CardContent>
-      </Card>
     </div>
   );
 }

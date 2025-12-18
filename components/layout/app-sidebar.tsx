@@ -22,8 +22,6 @@ import {
     FileText,
     Home,
     User,
-    Layers,
-    Scissors,
     Users,
     Tag,
     Star,
@@ -34,8 +32,6 @@ import { useAuth } from "@/lib/auth-context";
 // Navigation items for guests (not logged in)
 const guestNavItems = [
     { title: "Home", href: "/", icon: Home },
-    { title: "Collections", href: "/shop", icon: Layers },
-    { title: "Custom Tailored", href: "/custom-tailored", icon: Scissors },
     { title: "Browse Shirts", href: "/user", icon: Shirt },
 ];
 

@@ -67,6 +67,20 @@ export default {
         md: "calc(var(--radius) - 2px)",
         sm: "calc(var(--radius) - 4px)",
       },
+      keyframes: {
+        "dialog-in": {
+          from: { opacity: "0", transform: "translate(-50%, -50%) scale(0.8)" },
+          to: { opacity: "1", transform: "translate(-50%, -50%) scale(1)" },
+        },
+        "dialog-out": {
+          from: { opacity: "1", transform: "translate(-50%, -50%) scale(1)" },
+          to: { opacity: "0", transform: "translate(-50%, -50%) scale(0.8)" },
+        },
+      },
+      animation: {
+        "dialog-in": "dialog-in 300ms ease-in-out",
+        "dialog-out": "dialog-out 300ms ease-in-out",
+      },
     },
   },
   plugins: [require("tailwindcss-animate")],

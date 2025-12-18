@@ -23,74 +23,7 @@ const WhatsAppIcon = ({ className }: { className?: string }) => (
 
 export function ContactUs() {
   return (
-    <section className="w-full bg-background overflow-hidden">
-      {/* Editorial Campaign Section */}
-      <div className="relative min-h-[80vh] flex items-center">
-        <div className="absolute inset-0">
-          <Image
-            src="https://images.unsplash.com/photo-1469334031218-e382a71b716b?w=1920&q=80"
-            alt="Campaign Editorial"
-            fill
-            className="object-cover"
-          />
-          <div className="absolute inset-0 bg-black/50" />
-        </div>
-
-        <div className="container mx-auto px-6 lg:px-12 relative z-10">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-            <motion.div
-              initial={{ opacity: 0, x: -40 }}
-              whileInView={{ opacity: 1, x: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.8 }}
-              className="text-white"
-            >
-              <p className="text-xs tracking-luxury uppercase text-white/60 mb-6">
-                Campaign Fall/Winter 2025
-              </p>
-              <h2 className="text-4xl md:text-5xl lg:text-6xl font-light tracking-tight leading-tight mb-6">
-                The Art of
-                <span className="block italic font-medium">Reinvention</span>
-              </h2>
-              <p className="text-lg text-white/80 font-light leading-relaxed mb-8 max-w-lg">
-                Our latest campaign celebrates the transformative power of fashion.
-                Each piece is a testament to our commitment to excellence and innovation.
-              </p>
-              <Button
-                asChild
-                className="bg-white text-black hover:bg-white/90 px-8 py-6 text-xs tracking-luxury uppercase font-medium"
-              >
-                <Link href="/campaign">
-                  Discover the Campaign
-                  <ArrowRight className="w-4 h-4 ml-2" />
-                </Link>
-              </Button>
-            </motion.div>
-
-            {/* Stats/Highlights */}
-            <motion.div
-              initial={{ opacity: 0, x: 40 }}
-              whileInView={{ opacity: 1, x: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.8, delay: 0.2 }}
-              className="hidden lg:grid grid-cols-2 gap-8"
-            >
-              {[
-                { number: "25+", label: "Years of Excellence" },
-                { number: "150", label: "Exclusive Designs" },
-                { number: "48", label: "Countries Worldwide" },
-                { number: "∞", label: "Moments of Elegance" },
-              ].map((stat, idx) => (
-                <div key={idx} className="text-center text-white border border-white/20 p-8">
-                  <p className="text-4xl font-light mb-2">{stat.number}</p>
-                  <p className="text-xs tracking-luxury uppercase text-white/60">{stat.label}</p>
-                </div>
-              ))}
-            </motion.div>
-          </div>
-        </div>
-      </div>
-
+    <section className="w-full bg-background overflow-hidden" id="contact">
       {/* Social Links */}
       <div className="py-12 border-t border-border/50">
         <div className="container mx-auto px-6 lg:px-12">

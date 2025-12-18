@@ -71,13 +71,6 @@ export function SignUpForm({
       });
       if (error) throw error;
 
-      // Update the auto-created profile with the full_name
-      if (data.user) {
-        await supabase.from("profiles").update({
-          full_name: displayName,
-        }).eq("id", data.user.id);
-      }
-
       router.push("/auth/sign-up-success");
     } catch (error: unknown) {
       setError(error instanceof Error ? error.message : "An error occurred");

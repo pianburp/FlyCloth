@@ -73,7 +73,6 @@ export default async function OrdersPage() {
     <div className="flex flex-col gap-8 sm:gap-10 max-w-6xl mx-auto">
       {/* Luxury Page Header */}
       <div className="luxury-page-header">
-        <span className="label">Order History</span>
         <h1>My Orders</h1>
         <p>Track and review your purchase history</p>
         <div className="gold-divider mt-6" />
