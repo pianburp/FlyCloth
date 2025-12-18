@@ -240,11 +240,6 @@ export default function AddProductClient() {
   return (
     <div className="flex flex-col gap-6 sm:gap-8 w-full">
       <div className="flex items-start sm:items-center gap-4">
-        <Link href="/admin/products">
-          <Button variant="outline" size="icon" className="flex-shrink-0">
-            <ArrowLeft className="w-4 h-4" />
-          </Button>
-        </Link>
         <div>
           <h1 className="text-2xl sm:text-3xl font-bold mb-1 sm:mb-2">Add New Product</h1>
           <p className="text-muted-foreground text-sm sm:text-base">
@@ -410,7 +405,7 @@ export default function AddProductClient() {
           </Card>
 
           {/* Stripe Integration */}
-          <Card className="border-blue-200 bg-blue-50/50">
+          <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Zap className="w-5 h-5 text-blue-600" />

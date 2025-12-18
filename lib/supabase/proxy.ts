@@ -64,11 +64,25 @@ export async function updateSession(request: NextRequest) {
     // Fetch user role from database
     const { data: profile } = await supabase
       .from("profiles")
-      .select("role")
+      .select("role, full_name")
       .eq("id", user.id)
       .single();
     
     const userRole = profile?.role || "user";
+    const displayName = user.user_metadata?.full_name || user.user_metadata?.name || user.email?.split('@')[0];
+
+    // Inject auth user data as header for downstream consumption
+    // This makes middleware the single source of truth for auth
+    const authUserData = {
+      id: user.id,
+      email: user.email,
+      role: userRole,
+      display_name: displayName,
+      full_name: profile?.full_name,
+    };
+    
+    // Set the auth header on the request for server components to read
+    supabaseResponse.headers.set('x-auth-user', JSON.stringify(authUserData));
 
     // Admin routes - only accessible to admins
     if (path.startsWith("/admin")) {

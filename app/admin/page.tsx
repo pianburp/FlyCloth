@@ -1,15 +1,15 @@
 import { getCachedUserProfile } from "@/lib/rbac";
 import { createClient } from "@/lib/supabase/server";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { ShirtIcon, PackageIcon, DollarSignIcon, UsersIcon } from "lucide-react";
+import { ShirtIcon, PackageIcon, DollarSignIcon, UsersIcon, AlertTriangle } from "lucide-react";
 import { AnalyticsChart, ChartDataPoint } from "./analytics-chart";
+import Link from "next/link";
 
 export const dynamic = 'force-dynamic';
 
 export default async function AdminDashboard() {
   const supabase = await createClient();
 
-  // Fetch dashboard data in parallel (including profile)
   const [
     profile,
     { count: productsCount },
@@ -18,7 +18,8 @@ export default async function AdminDashboard() {
     { data: revenueData },
     { data: recentOrders },
     { data: allOrderItems },
-    { data: ordersWithDate }
+    { data: ordersWithDate },
+    { data: lowStockVariants }
   ] = await Promise.all([
     getCachedUserProfile(),
     supabase.from("products").select("*", { count: "exact", head: true }),
@@ -47,7 +48,12 @@ export default async function AdminDashboard() {
           quantity
         )
       `)
-      .order("created_at", { ascending: true })
+      .order("created_at", { ascending: true }),
+    supabase.from("product_variants")
+      .select("id, sku, stock_quantity, product_id")
+      .lt('stock_quantity', 25)
+      .order('stock_quantity', { ascending: true })
+      .limit(5)
   ]);
 
   const totalRevenue = revenueData?.reduce((acc, order) => acc + (Number(order.total_amount) || 0), 0) || 0;
@@ -161,6 +167,36 @@ export default async function AdminDashboard() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Low Stock Alert Widget */}
+      {lowStockVariants && lowStockVariants.length > 0 && (
+        <Card className="border-orange-500/50 bg-orange-500/5">
+          <CardHeader className="pb-2">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <AlertTriangle className="w-5 h-5 text-orange-500" />
+                <CardTitle className="text-orange-600">Low Stock Alert</CardTitle>
+              </div>
+              <Link href="/admin/inventory">
+                <span className="text-sm text-primary hover:underline">View All →</span>
+              </Link>
+            </div>
+            <CardDescription>{lowStockVariants.length} item(s) need restocking</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-2">
+              {lowStockVariants.slice(0, 3).map((variant) => (
+                <div key={variant.id} className="flex items-center justify-between text-sm">
+                  <span className="font-medium">{variant.sku}</span>
+                  <span className={variant.stock_quantity === 0 ? "text-destructive font-bold" : "text-orange-600"}>
+                    {variant.stock_quantity} left
+                  </span>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Analytics Chart */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">

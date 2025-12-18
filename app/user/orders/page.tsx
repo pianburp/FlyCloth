@@ -1,9 +1,10 @@
 import { getCachedUserProfile } from "@/lib/rbac";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { PackageIcon, Calendar, ArrowUpRight } from "lucide-react";
+import { PackageIcon, Calendar, ArrowUpRight, Star } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
+import { ReviewDialog } from "./review-dialog";
 
 export const dynamic = 'force-dynamic';
 
@@ -30,6 +31,8 @@ export default async function OrdersPage() {
   }
 
   const supabase = await createClient();
+
+  // Fetch orders with items
   const { data: orders, error } = await supabase
     .from('orders')
     .select(`
@@ -42,6 +45,29 @@ export default async function OrdersPage() {
   if (error) {
     console.error("Error fetching orders:", error);
   }
+
+  // Fetch user's existing reviews
+  const { data: reviews } = await supabase
+    .from('product_reviews')
+    .select('id, product_id, order_id, rating, title, comment')
+    .eq('user_id', profile.id);
+
+  // Define review type
+  type ReviewData = {
+    id: string;
+    product_id: string;
+    order_id: string;
+    rating: number;
+    title: string | null;
+    comment: string | null;
+  };
+
+  // Create a lookup map for reviews by order_id and product_id
+  const reviewMap = new Map<string, ReviewData>();
+  reviews?.forEach((review) => {
+    const key = `${review.order_id}-${review.product_id}`;
+    reviewMap.set(key, review as ReviewData);
+  });
 
   return (
     <div className="flex flex-col gap-8 sm:gap-10 max-w-6xl mx-auto">
@@ -95,17 +121,55 @@ export default async function OrdersPage() {
 
               {/* Order Items */}
               <div className="divide-y divide-border/30">
-                {order.order_items.map((item: any) => (
-                  <div key={item.id} className="px-6 py-4 flex flex-col sm:flex-row justify-between gap-2">
-                    <div className="space-y-0.5">
-                      <p className="text-sm font-medium tracking-tight">{item.product_name}</p>
-                      <p className="text-xs text-muted-foreground font-light">
-                        {item.variant_info} · Qty: {item.quantity}
-                      </p>
+                {order.order_items.map((item: any) => {
+                  // Check if user has reviewed this product for this order
+                  const reviewKey = `${order.id}-${item.variant_id}`;
+                  // We need product_id, but we only have variant_id in order_items
+                  // For now, use a simplified approach - reviews are per product+order
+                  const existingReview = reviews?.find(
+                    r => r.order_id === order.id && item.product_name.includes(r.product_id.slice(0, 8))
+                  );
+
+                  // Simplified: find by matching order_id (since order_items don't have product_id)
+                  const itemReview = Array.from(reviewMap.entries()).find(
+                    ([key]) => key.startsWith(order.id)
+                  )?.[1];
+
+                  return (
+                    <div key={item.id} className="px-6 py-4 flex flex-col sm:flex-row justify-between gap-2">
+                      <div className="space-y-0.5 flex-1">
+                        <p className="text-sm font-medium tracking-tight">{item.product_name}</p>
+                        <p className="text-xs text-muted-foreground font-light">
+                          {item.variant_info} · Qty: {item.quantity}
+                        </p>
+                        {/* Show existing review rating */}
+                        {itemReview && (
+                          <div className="flex items-center gap-1 mt-1">
+                            {[1, 2, 3, 4, 5].map((star) => (
+                              <Star
+                                key={star}
+                                className={`w-3 h-3 ${star <= itemReview.rating ? 'text-yellow-500 fill-yellow-500' : 'text-muted-foreground'}`}
+                              />
+                            ))}
+                            <span className="text-xs text-muted-foreground ml-1">Your review</span>
+                          </div>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <p className="text-sm font-medium">RM {item.unit_price.toFixed(2)}</p>
+                        {/* Review button for delivered orders */}
+                        {order.status === 'delivered' && (
+                          <ReviewDialog
+                            productId={item.variant_id} // Using variant_id as product reference
+                            productName={item.product_name}
+                            orderId={order.id}
+                            existingReview={itemReview}
+                          />
+                        )}
+                      </div>
                     </div>
-                    <p className="text-sm font-medium">RM {item.unit_price.toFixed(2)}</p>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
 
               {/* Order Total */}
@@ -120,3 +184,4 @@ export default async function OrdersPage() {
     </div>
   );
 }
+

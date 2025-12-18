@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { headers } from "next/headers";
 import { cache } from "react";
 
 export type UserRole = "user" | "admin";
@@ -12,6 +13,37 @@ export interface UserProfile {
   address?: string;
   role: UserRole;
   created_at: string;
+}
+
+/**
+ * Get auth user from middleware headers (single source of truth)
+ * Falls back to null if no header present
+ */
+export async function getAuthFromHeaders(): Promise<{
+  id: string;
+  email: string;
+  role: UserRole;
+  display_name?: string;
+  full_name?: string;
+} | null> {
+  try {
+    const headersList = await headers();
+    const authHeader = headersList.get("x-auth-user");
+    
+    if (authHeader) {
+      const authData = JSON.parse(authHeader);
+      return {
+        id: authData.id,
+        email: authData.email,
+        role: authData.role || "user",
+        display_name: authData.display_name,
+        full_name: authData.full_name,
+      };
+    }
+  } catch {
+    // Header parsing failed, fall back to null
+  }
+  return null;
 }
 
 /**

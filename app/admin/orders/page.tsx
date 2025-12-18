@@ -5,6 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
+import { ExportOrdersButton } from "./export-orders-button";
 
 export const dynamic = 'force-dynamic';
 
@@ -45,11 +46,14 @@ export default async function AdminOrdersPage() {
 
   return (
     <div className="flex flex-col gap-6 sm:gap-8">
-      <div>
-        <h1 className="text-2xl sm:text-3xl font-bold mb-2">Order Management</h1>
-        <p className="text-sm sm:text-base text-muted-foreground">
-          View and manage customer orders
-        </p>
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
+        <div>
+          <h1 className="text-2xl sm:text-3xl font-bold mb-2">Order Management</h1>
+          <p className="text-sm sm:text-base text-muted-foreground">
+            View and manage customer orders
+          </p>
+        </div>
+        <ExportOrdersButton orders={orders || []} />
       </div>
 
       <Card>

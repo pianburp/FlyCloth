@@ -12,7 +12,6 @@ import {
     SidebarMenu,
     SidebarMenuButton,
     SidebarMenuItem,
-    SidebarSeparator
 } from "@/components/ui/sidebar";
 import {
     Shirt,
@@ -25,9 +24,12 @@ import {
     User,
     Layers,
     Scissors,
+    Users,
+    Tag,
+    Star,
+    Boxes,
 } from "lucide-react";
-import { createClient } from "@/lib/supabase/client";
-import { useEffect, useState, useMemo } from "react";
+import { useAuth } from "@/lib/auth-context";
 
 // Navigation items for guests (not logged in)
 const guestNavItems = [
@@ -46,81 +48,26 @@ const userNavItems = [
     { title: "Settings", href: "/user/settings", icon: Settings },
 ];
 
-// Navigation items for admin users
+// Navigation items for admin users (admin section)
 const adminNavItems = [
     { title: "Dashboard", href: "/admin", icon: LayoutDashboard },
     { title: "Products", href: "/admin/products", icon: Shirt },
+    { title: "Inventory", href: "/admin/inventory", icon: Boxes },
     { title: "Orders", href: "/admin/orders", icon: FileText },
+    { title: "Customers", href: "/admin/customers", icon: Users },
+    { title: "Categories", href: "/admin/categories", icon: Tag },
+    { title: "Reviews", href: "/admin/reviews", icon: Star },
     { title: "Settings", href: "/admin/settings", icon: Settings },
 ];
 
-// Props interface for server-side initial data
-interface AppSidebarProps {
-    initialUser?: {
-        email: string;
-        role: string;
-    } | null;
-}
-
 /**
- * Sidebar component optimized with server-side initial data.
- * Receives user data from layout to avoid client-side fetch waterfall.
- * Still listens for auth changes to handle login/logout without refresh.
+ * Sidebar component using unified auth context.
+ * Shows navigation based on user role.
+ * Admin users see both user navigation AND admin section.
  */
-export function AppSidebar({ initialUser }: AppSidebarProps) {
-    // Initialize from server-side data instead of null/loading state
-    const [user, setUser] = useState<{ email: string } | null>(
-        initialUser ? { email: initialUser.email } : null
-    );
-    const [userRole, setUserRole] = useState<string>(initialUser?.role || "user");
-    // No loading state needed when we have initial data
-    const [isLoading, setIsLoading] = useState(!initialUser);
+export function AppSidebar() {
+    const { user, isAdmin, isLoading } = useAuth();
     const pathname = usePathname();
-    const supabase = useMemo(() => createClient(), []);
-
-    useEffect(() => {
-        // Only fetch if no initial data was provided
-        if (!initialUser) {
-            const getUser = async () => {
-                const {
-                    data: { user },
-                } = await supabase.auth.getUser();
-                setUser(user ? { email: user.email || '' } : null);
-
-                if (user) {
-                    const { data: profile } = await supabase
-                        .from("profiles")
-                        .select("role")
-                        .eq("id", user.id)
-                        .single();
-                    setUserRole(profile?.role || "user");
-                }
-                setIsLoading(false);
-            };
-            getUser();
-        }
-
-        // Always listen for auth state changes (login/logout)
-        const {
-            data: { subscription },
-        } = supabase.auth.onAuthStateChange((_event, session) => {
-            setUser(session?.user ? { email: session.user.email || '' } : null);
-            if (session?.user) {
-                supabase
-                    .from("profiles")
-                    .select("role")
-                    .eq("id", session.user.id)
-                    .single()
-                    .then(({ data }) => setUserRole(data?.role || "user"));
-            } else {
-                setUserRole("user");
-            }
-        });
-
-        return () => subscription.unsubscribe();
-    }, [supabase, initialUser]);
-
-    const isAdmin = userRole === "admin";
 
     return (
         <Sidebar collapsible="icon" className="border-r-0">
@@ -139,14 +86,17 @@ export function AppSidebar({ initialUser }: AppSidebarProps) {
             </div>
 
             <SidebarContent>
-                {/* Main Navigation */}
+                {/* Navigation based on role */}
                 <SidebarGroup>
                     <SidebarGroupLabel className="text-[10px] tracking-luxury uppercase text-sidebar-foreground/60 font-medium">
-                        Navigation
+                        {isAdmin ? "Admin" : "Navigation"}
                     </SidebarGroupLabel>
                     <SidebarGroupContent>
                         <SidebarMenu>
-                            {(user ? userNavItems : guestNavItems).map((item) => (
+                            {/* Admin users see admin items only */}
+                            {/* Regular users see user items */}
+                            {/* Guests see guest items */}
+                            {(isAdmin ? adminNavItems : user ? userNavItems : guestNavItems).map((item) => (
                                 <SidebarMenuItem key={item.href}>
                                     <SidebarMenuButton
                                         asChild
@@ -163,36 +113,6 @@ export function AppSidebar({ initialUser }: AppSidebarProps) {
                         </SidebarMenu>
                     </SidebarGroupContent>
                 </SidebarGroup>
-
-                {/* Admin Navigation */}
-                {isAdmin && (
-                    <>
-                        <SidebarSeparator className="bg-gradient-to-r from-transparent via-sidebar-border to-transparent" />
-                        <SidebarGroup>
-                            <SidebarGroupLabel className="text-[10px] tracking-luxury uppercase text-[hsl(38,50%,55%)] font-medium">
-                                Admin
-                            </SidebarGroupLabel>
-                            <SidebarGroupContent>
-                                <SidebarMenu>
-                                    {adminNavItems.map((item) => (
-                                        <SidebarMenuItem key={item.href}>
-                                            <SidebarMenuButton
-                                                asChild
-                                                isActive={pathname === item.href}
-                                                tooltip={item.title}
-                                            >
-                                                <Link href={item.href}>
-                                                    <item.icon className="h-4 w-4" />
-                                                    <span>{item.title}</span>
-                                                </Link>
-                                            </SidebarMenuButton>
-                                        </SidebarMenuItem>
-                                    ))}
-                                </SidebarMenu>
-                            </SidebarGroupContent>
-                        </SidebarGroup>
-                    </>
-                )}
             </SidebarContent>
 
             {/* Luxury Footer */}
