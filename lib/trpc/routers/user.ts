@@ -1,6 +1,5 @@
 import { z } from "zod";
 import { router, protectedProcedure } from "../trpc";
-import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
 
 export const userRouter = router({
@@ -16,7 +15,7 @@ export const userRouter = router({
       })
     )
     .mutation(async ({ ctx, input }) => {
-      const supabase = await createClient();
+      const { supabase, user } = ctx;
 
       const { error } = await supabase
         .from("profiles")
@@ -26,13 +25,13 @@ export const userRouter = router({
           address: input.address,
           updated_at: new Date().toISOString(),
         })
-        .eq("id", ctx.user.id);
+        .eq("id", user.id);
 
       if (error) {
-        return { error: error.message };
+        return { success: false, error: error.message };
       }
 
       revalidatePath("/user/settings");
-      return { success: "Profile updated successfully" };
+      return { success: true, message: "Profile updated successfully" };
     }),
 });

@@ -1,17 +1,18 @@
 'use server'
 
 import { createClient } from "@/lib/supabase/server";
+import { getCachedUserProfile } from "@/lib/rbac";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
 export async function updateProfile(formData: FormData) {
-  const supabase = await createClient();
+  const profile = await getCachedUserProfile();
   
-  const { data: { user }, error: userError } = await supabase.auth.getUser();
-
-  if (userError || !user) {
+  if (!profile) {
     redirect('/auth/login');
   }
+
+  const supabase = await createClient();
 
   const fullName = formData.get('fullName') as string;
   const phone = formData.get('phone') as string;
@@ -25,7 +26,7 @@ export async function updateProfile(formData: FormData) {
       address: address,
       updated_at: new Date().toISOString(),
     })
-    .eq('id', user.id);
+    .eq('id', profile.id);
 
   if (error) {
     return { error: error.message };

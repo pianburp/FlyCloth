@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { updateOrderStatus } from "../actions";
+import { trpc } from "@/lib/trpc/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -41,7 +41,10 @@ export default function OrderDetailsClient({ order }: { order: Order }) {
   const handleStatusChange = async (newStatus: string) => {
     setIsUpdating(true);
     try {
-      await updateOrderStatus(order.id, newStatus);
+      await trpc.orders.updateStatus.mutate({
+        orderId: order.id,
+        newStatus: newStatus as "pending" | "processing" | "shipped" | "delivered" | "cancelled",
+      });
       setStatus(newStatus);
       toast({
         title: "Status Updated",
@@ -123,8 +126,8 @@ export default function OrderDetailsClient({ order }: { order: Order }) {
               <div className="space-y-2">
                 <p className="font-medium">Address:</p>
                 <p className="text-muted-foreground">
-                  {typeof order.shipping_address === 'string' 
-                    ? order.shipping_address 
+                  {typeof order.shipping_address === 'string'
+                    ? order.shipping_address
                     : (order.shipping_address?.address || "No address provided")}
                 </p>
                 <p className="font-medium mt-4">Payment Method:</p>
@@ -148,7 +151,7 @@ export default function OrderDetailsClient({ order }: { order: Order }) {
                   {status.charAt(0).toUpperCase() + status.slice(1)}
                 </Badge>
               </div>
-              
+
               <div className="space-y-2">
                 <label className="text-sm font-medium">Change Status</label>
                 <select
@@ -178,10 +181,10 @@ export default function OrderDetailsClient({ order }: { order: Order }) {
                   <>
                     <p className="text-sm text-muted-foreground mt-2">Name:</p>
                     <p>{order.user_profile.full_name || "N/A"}</p>
-                    
+
                     <p className="text-sm text-muted-foreground mt-2">Phone:</p>
                     <p>{order.user_profile.phone || "N/A"}</p>
-                    
+
                     <p className="text-sm text-muted-foreground mt-2">Address:</p>
                     <p className="whitespace-pre-wrap">{order.user_profile.address || "N/A"}</p>
                   </>

@@ -1,111 +1,105 @@
 import { z } from "zod";
-import { router, protectedProcedure, publicProcedure } from "../trpc";
-import { createClient } from "@/lib/supabase/server";
+import { router, protectedProcedure } from "../trpc";
+import { revalidatePath } from "next/cache";
 
+/**
+ * Cart Router
+ * 
+ * Handles cart management operations. 
+ * NOTE: Order creation is handled ONLY by Stripe webhook.
+ */
 export const cartRouter = router({
   /**
-   * Create a new order from cart items
+   * Add item to cart
    */
-  createOrder: protectedProcedure
+  addToCart: protectedProcedure
     .input(
       z.object({
-        items: z.array(
-          z.object({
-            variantId: z.string(),
-            name: z.string(),
-            variantInfo: z.string(),
-            size: z.string(),
-            quantity: z.number().int().positive(),
-            price: z.number().positive(),
-          })
-        ),
-        totalAmount: z.number().positive(),
-        discountAmount: z.number().min(0),
-        shippingAddress: z.object({
-          fullName: z.string(),
-          phone: z.string(),
-          address: z.string(),
-        }),
-        paymentMethod: z.string(),
+        variantId: z.string().uuid(),
+        quantity: z.number().int().positive(),
       })
     )
     .mutation(async ({ ctx, input }) => {
-      const supabase = await createClient();
+      const { supabase, user } = ctx;
 
-      // 1. Create Order
-      const { data: order, error: orderError } = await supabase
-        .from("orders")
-        .insert({
-          user_id: ctx.user.id,
-          status: "pending",
-          total_amount: input.totalAmount,
-          discount_amount: input.discountAmount,
-          shipping_address: input.shippingAddress,
-          payment_method: input.paymentMethod,
-        })
-        .select()
+      // Check if item already exists in cart
+      const { data: existingItem } = await supabase
+        .from("cart_items")
+        .select("id, quantity")
+        .eq("user_id", user.id)
+        .eq("variant_id", input.variantId)
         .single();
 
-      if (orderError) {
-        console.error("Error creating order:", orderError);
-        return { success: false, error: orderError.message };
+      if (existingItem) {
+        // Update quantity
+        const { error } = await supabase
+          .from("cart_items")
+          .update({ quantity: existingItem.quantity + input.quantity })
+          .eq("id", existingItem.id);
+
+        if (error) return { success: false, error: error.message };
+      } else {
+        // Insert new item
+        const { error } = await supabase.from("cart_items").insert({
+          user_id: user.id,
+          variant_id: input.variantId,
+          quantity: input.quantity,
+        });
+
+        if (error) return { success: false, error: error.message };
       }
 
-      // 2. Create Order Items
-      const orderItems = input.items.map((item) => ({
-        order_id: order.id,
-        variant_id: item.variantId,
-        product_name: item.name,
-        variant_info: `${item.size} / ${item.variantInfo}`,
-        quantity: item.quantity,
-        unit_price: item.price,
-      }));
+      revalidatePath("/user/cart");
+      return { success: true };
+    }),
 
-      const { error: itemsError } = await supabase
-        .from("order_items")
-        .insert(orderItems);
+  /**
+   * Update cart item quantity
+   */
+  updateQuantity: protectedProcedure
+    .input(
+      z.object({
+        cartItemId: z.string().uuid(),
+        quantity: z.number().int().positive(),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      const { supabase, user } = ctx;
 
-      if (itemsError) {
-        console.error("Error creating order items:", itemsError);
-        return { success: false, error: itemsError.message };
-      }
+      const { error } = await supabase
+        .from("cart_items")
+        .update({ quantity: input.quantity })
+        .eq("id", input.cartItemId)
+        .eq("user_id", user.id); // Ensure user owns this cart item
 
-      // 3. Update Stock
-      await Promise.all(
-        input.items.map(async (item) => {
-          const { data: variant } = await supabase
-            .from("product_variants")
-            .select("stock_quantity")
-            .eq("id", item.variantId)
-            .single();
+      if (error) return { success: false, error: error.message };
 
-          if (variant) {
-            const newStock = Math.max(0, variant.stock_quantity - item.quantity);
-            const { error: updateStockError } = await supabase
-              .from("product_variants")
-              .update({ stock_quantity: newStock })
-              .eq("id", item.variantId);
+      revalidatePath("/user/cart");
+      return { success: true };
+    }),
 
-            if (updateStockError) {
-              console.error(
-                `Error updating stock for variant ${item.variantId}:`,
-                updateStockError
-              );
-            }
-          }
-        })
-      );
+  /**
+   * Remove item from cart
+   */
+  removeItem: protectedProcedure
+    .input(
+      z.object({
+        cartItemId: z.string().uuid(),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      const { supabase, user } = ctx;
 
-      // 4. Clear Cart
-      const { error: clearCartError } = await supabase
+      const { error } = await supabase
         .from("cart_items")
         .delete()
-        .eq("user_id", ctx.user.id);
+        .eq("id", input.cartItemId)
+        .eq("user_id", user.id); // Ensure user owns this cart item
 
-      if (clearCartError) {
-        console.error("Error clearing cart:", clearCartError);
-      }
+      if (error) return { success: false, error: error.message };
 
-      return { success: true, orderId: order.id };
+      revalidatePath("/user/cart");
+      return { success: true };
     }),
 });
+

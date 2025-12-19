@@ -1,32 +1,46 @@
 import { initTRPC, TRPCError } from "@trpc/server";
 import superjson from "superjson";
 import { createClient } from "@/lib/supabase/server";
-import type { User } from "@supabase/supabase-js";
-import { getUserRole, type UserRole } from "@/lib/rbac";
+import { getAuthFromHeaders, type UserRole } from "@/lib/rbac";
+import type { SupabaseClient } from "@supabase/supabase-js";
 
 /**
  * tRPC Context - Available in all procedures
+ * 
+ * Uses auth data from middleware headers to avoid redundant DB calls.
+ * The middleware (proxy.ts) already fetches user and role, so we reuse that.
  */
 export interface TRPCContext {
-  user: User | null;
+  user: { id: string; email: string } | null;
   role: UserRole | null;
+  supabase: SupabaseClient;
 }
 
 /**
  * Create context for each request
+ * 
+ * OPTIMIZED: Uses middleware-injected auth headers instead of fetching from DB.
+ * This eliminates 2-3 redundant database calls per request.
  */
 export async function createTRPCContext(): Promise<TRPCContext> {
   const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
   
-  let role: UserRole | null = null;
-  if (user) {
-    role = await getUserRole();
+  // Get auth data from middleware header (already fetched in proxy.ts)
+  const authUser = await getAuthFromHeaders();
+  
+  if (authUser) {
+    return {
+      user: { id: authUser.id, email: authUser.email },
+      role: authUser.role,
+      supabase,
+    };
   }
   
+  // Fallback: No auth header means user is not authenticated
   return {
-    user,
-    role,
+    user: null,
+    role: null,
+    supabase,
   };
 }
 
@@ -66,6 +80,7 @@ export const protectedProcedure = t.procedure.use(async ({ ctx, next }) => {
     ctx: {
       ...ctx,
       user: ctx.user,
+      supabase: ctx.supabase,
     },
   });
 });
@@ -91,6 +106,7 @@ export const adminProcedure = t.procedure.use(async ({ ctx, next }) => {
       ...ctx,
       user: ctx.user,
       role: ctx.role,
+      supabase: ctx.supabase,
     },
   });
 });

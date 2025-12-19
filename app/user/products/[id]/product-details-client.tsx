@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Minus, Plus, ShoppingCart, Play } from "lucide-react";
-import { addToCart } from "./actions";
+import { trpc } from "@/lib/trpc/client";
 import { createClient } from "@/lib/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
 
@@ -75,8 +75,11 @@ export default function ProductDetailsClient({ product, variants, images }: Prod
 
     setIsAdding(true);
     try {
-      const result = await addToCart(selectedVariant.id, quantity);
-      if (result.error) {
+      const result = await trpc.cart.addToCart.mutate({
+        variantId: selectedVariant.id,
+        quantity: quantity,
+      });
+      if (!result.success) {
         toast({
           variant: "destructive",
           title: "Error adding to cart",

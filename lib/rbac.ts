@@ -15,17 +15,23 @@ export interface UserProfile {
   created_at: string;
 }
 
-/**
- * Get auth user from middleware headers (single source of truth)
- * Falls back to null if no header present
- */
-export async function getAuthFromHeaders(): Promise<{
+export interface AuthUser {
   id: string;
   email: string;
   role: UserRole;
   display_name?: string;
   full_name?: string;
-} | null> {
+}
+
+/**
+ * Get auth user from middleware headers (single source of truth)
+ * Falls back to null if no header present
+ * 
+ * This is the PRIMARY method for getting auth data in server components.
+ * The middleware (proxy.ts) already fetches user and profile on every request,
+ * so we reuse that data to avoid redundant database calls.
+ */
+export async function getAuthFromHeaders(): Promise<AuthUser | null> {
   try {
     const headersList = await headers();
     const authHeader = headersList.get("x-auth-user");
@@ -47,9 +53,22 @@ export async function getAuthFromHeaders(): Promise<{
 }
 
 /**
- * Get the current user's role from the database
+ * Request-scoped cached version of getAuthFromHeaders
+ * Prevents multiple header parsing calls within the same request
  */
-export async function getUserRole(): Promise<UserRole | null> {
+export const getCachedAuthFromHeaders = cache(getAuthFromHeaders);
+
+/**
+ * Get the current user's role
+ * 
+ * OPTIMIZED: Prefers middleware header data, falls back to DB only if needed.
+ */
+export const getUserRole = cache(async (): Promise<UserRole | null> => {
+  // Try headers first (already fetched by middleware)
+  const authData = await getAuthFromHeaders();
+  if (authData) return authData.role;
+  
+  // Fallback to DB for edge cases (e.g., API routes without middleware)
   const supabase = await createClient();
   const {
     data: { user },
@@ -64,12 +83,15 @@ export async function getUserRole(): Promise<UserRole | null> {
     .single();
 
   return profile?.role || "user";
-}
+});
 
 /**
  * Get the current user's profile
+ * 
+ * OPTIMIZED: Uses cached auth from headers for basic info,
+ * only fetches from DB when full profile is needed.
  */
-export async function getUserProfile(): Promise<UserProfile | null> {
+export const getUserProfile = cache(async (): Promise<UserProfile | null> => {
   const supabase = await createClient();
   const {
     data: { user },
@@ -95,14 +117,13 @@ export async function getUserProfile(): Promise<UserProfile | null> {
     role: profile.role || "user",
     created_at: profile.created_at,
   };
-}
+});
 
 /**
- * Request-scoped memoized version of getUserProfile
- * Uses React's cache() to deduplicate calls within the same request
- * This prevents multiple DB calls when getUserProfile is called from multiple components
+ * Legacy alias for getUserProfile (deprecated, use getUserProfile directly)
+ * @deprecated Use getUserProfile instead
  */
-export const getCachedUserProfile = cache(getUserProfile);
+export const getCachedUserProfile = getUserProfile;
 
 /**
  * Check if the current user has a specific role

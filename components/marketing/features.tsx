@@ -75,7 +75,7 @@ export function Features() {
   const opacity = useTransform(scrollYProgress, [0, 0.2, 0.8, 1], [0, 1, 1, 0]);
 
   return (
-    <section ref={containerRef} className="w-full py-32 bg-background overflow-hidden" id="features">
+    <section ref={containerRef} className="relative w-full py-32 bg-background overflow-hidden" id="features">
       {/* Collections Grid */}
       <div className="container mx-auto px-6 lg:px-12 mb-32">
         <motion.div
@@ -118,7 +118,9 @@ export function Features() {
                     src={collection.image}
                     alt={collection.title}
                     fill
+                    sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 33vw"
                     className="object-cover transition-transform duration-700 group-hover:scale-105"
+                    priority={idx === 0}
                   />
                   {/* Overlay on hover */}
                   <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors duration-500" />
@@ -182,6 +184,7 @@ export function Features() {
                   src={category.image}
                   alt={category.name}
                   fill
+                  sizes="(max-width: 1024px) 50vw, 25vw"
                   className="object-cover transition-transform duration-700 group-hover:scale-110"
                 />
                 {/* Dark overlay */}
