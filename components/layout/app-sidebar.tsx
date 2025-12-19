@@ -12,6 +12,7 @@ import {
     SidebarMenu,
     SidebarMenuButton,
     SidebarMenuItem,
+    useSidebar,
 } from "@/components/ui/sidebar";
 import {
     Shirt,
@@ -61,13 +62,21 @@ const adminNavItems = [
  */
 export function AppSidebar() {
     const { user, isAdmin, isLoading } = useAuth();
+    const { isMobile, setOpenMobile } = useSidebar();
     const pathname = usePathname();
+
+    // Close sidebar on mobile when navigating
+    const handleNavClick = () => {
+        if (isMobile) {
+            setOpenMobile(false);
+        }
+    };
 
     return (
         <Sidebar collapsible="icon" className="border-r-0">
             {/* Luxury Sidebar Header */}
             <div className="relative px-4 py-5 border-b border-sidebar-border">
-                <Link href="/" className="flex items-center gap-2 group-data-[collapsible=icon]:justify-center">
+                <Link href="/" className="flex items-center gap-2 group-data-[collapsible=icon]:justify-center" onClick={handleNavClick}>
                     <span className="text-lg font-light tracking-tight group-data-[collapsible=icon]:hidden">
                         FlyCloth
                     </span>
@@ -97,7 +106,7 @@ export function AppSidebar() {
                                         isActive={pathname === item.href}
                                         tooltip={item.title}
                                     >
-                                        <Link href={item.href}>
+                                        <Link href={item.href} onClick={handleNavClick}>
                                             <item.icon className="h-4 w-4" />
                                             <span>{item.title}</span>
                                         </Link>
