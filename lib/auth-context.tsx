@@ -52,7 +52,7 @@ export function AuthProvider({ children, initialUser = null }: AuthProviderProps
                         id: supabaseUser.id,
                         email: supabaseUser.email || "",
                         role: profile?.role || "user",
-                        display_name: supabaseUser.user_metadata?.full_name || supabaseUser.user_metadata?.name || supabaseUser.email?.split('@')[0],
+                        display_name: profile?.full_name || supabaseUser.user_metadata?.full_name || supabaseUser.user_metadata?.name || supabaseUser.email?.split('@')[0],
                         full_name: profile?.full_name,
                     });
                 } else {
@@ -76,7 +76,7 @@ export function AuthProvider({ children, initialUser = null }: AuthProviderProps
                     id: session.user.id,
                     email: session.user.email || "",
                     role: profile?.role || "user",
-                    display_name: session.user.user_metadata?.full_name || session.user.user_metadata?.name || session.user.email?.split('@')[0],
+                    display_name: profile?.full_name || session.user.user_metadata?.full_name || session.user.user_metadata?.name || session.user.email?.split('@')[0],
                     full_name: profile?.full_name,
                 });
             } else {

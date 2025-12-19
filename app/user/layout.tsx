@@ -20,7 +20,7 @@ export default async function UserLayout({
     id: profile.id,
     email: profile.email,
     role: profile.role,
-    display_name: profile.display_name,
+    display_name: profile.full_name,
     full_name: profile.full_name,
   } : null;
 

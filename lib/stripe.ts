@@ -9,7 +9,7 @@ if (!stripeSecretKey) {
 }
 
 export const stripe = new Stripe(stripeSecretKey || 'sk_test_placeholder', {
-  apiVersion: '2025-03-31.basil' as Stripe.LatestApiVersion,
+  apiVersion: '2025-11-17' as Stripe.LatestApiVersion,
   typescript: true,
 });
 
