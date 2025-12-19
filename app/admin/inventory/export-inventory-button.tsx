@@ -8,7 +8,8 @@ interface InventoryItem {
     id: string;
     sku: string;
     size: string;
-    color: string;
+    fit: string;
+    gsm: number | null;
     price: number;
     stock_quantity: number;
     product_name: string;
@@ -26,7 +27,8 @@ export function ExportInventoryButton({ items }: ExportInventoryButtonProps) {
             { header: 'Product SKU', accessor: 'product_sku' },
             { header: 'Variant SKU', accessor: 'sku' },
             { header: 'Size', accessor: 'size' },
-            { header: 'Color', accessor: 'color' },
+            { header: 'Fit', accessor: 'fit' },
+            { header: 'GSM', accessor: (item) => item.gsm?.toString() || '' },
             { header: 'Stock', accessor: 'stock_quantity' },
             { header: 'Price (RM)', accessor: (item) => item.price.toFixed(2) },
         ];

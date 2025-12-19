@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { stripe } from '@/lib/stripe';
-import { createClient } from '@/lib/supabase/server';
+import { createServiceClient } from '@/lib/supabase/service';
 import Stripe from 'stripe';
 
 // Disable body parsing - Stripe needs the raw body for signature verification
@@ -60,7 +60,7 @@ export async function POST(request: NextRequest) {
  * Handle successful checkout session completion
  */
 async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) {
-  const supabase = await createClient();
+  const supabase = createServiceClient();
 
   // Get metadata from session
   const userId = session.metadata?.user_id;
@@ -136,7 +136,7 @@ async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) 
     order_id: order.id,
     variant_id: item.variantId,
     product_name: item.name,
-    variant_info: `${item.color} / ${item.size}`,
+    variant_info: `${item.size} / ${item.variantInfo}`,
     quantity: item.quantity,
     unit_price: item.price,
   }));
@@ -181,7 +181,7 @@ async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) 
  * Handle failed payment
  */
 async function handlePaymentFailed(paymentIntent: Stripe.PaymentIntent) {
-  const supabase = await createClient();
+  const supabase = createServiceClient();
 
   // Update order status if it exists
   const { error } = await supabase

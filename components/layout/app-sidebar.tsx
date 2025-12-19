@@ -23,7 +23,6 @@ import {
     Home,
     User,
     Users,
-    Tag,
     Star,
     Boxes,
 } from "lucide-react";
@@ -51,7 +50,6 @@ const adminNavItems = [
     { title: "Inventory", href: "/admin/inventory", icon: Boxes },
     { title: "Orders", href: "/admin/orders", icon: FileText },
     { title: "Customers", href: "/admin/customers", icon: Users },
-    { title: "Categories", href: "/admin/categories", icon: Tag },
     { title: "Reviews", href: "/admin/reviews", icon: Star },
     { title: "Settings", href: "/admin/settings", icon: Settings },
 ];

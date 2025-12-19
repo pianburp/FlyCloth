@@ -25,7 +25,7 @@ interface CartItem {
   name: string;
   price: number;
   size: string;
-  color: string;
+  variantInfo: string;
   quantity: number;
   image: string;
 }
@@ -99,7 +99,7 @@ export default function PaymentClient({ cartItems, userEmail }: PaymentClientPro
           cartItems: cartItems.map(item => ({
             variantId: item.variantId,
             name: item.name,
-            color: item.color,
+            variantInfo: item.variantInfo,
             size: item.size,
             quantity: item.quantity,
             price: item.price,
@@ -279,7 +279,7 @@ export default function PaymentClient({ cartItems, userEmail }: PaymentClientPro
                       <div className="flex-1 min-w-0 space-y-0.5">
                         <p className="text-sm font-medium tracking-tight truncate">{item.name}</p>
                         <p className="text-xs text-muted-foreground font-light">
-                          {item.size} · {item.color} · Qty: {item.quantity}
+                          {item.size} · {item.variantInfo} · Qty: {item.quantity}
                         </p>
                       </div>
                       <p className="text-sm font-medium">RM {(item.price * item.quantity).toFixed(2)}</p>

@@ -12,7 +12,7 @@ interface CartItem {
   name: string;
   price: number;
   size: string;
-  color: string;
+  variantInfo: string;
   quantity: number;
   image: string;
 }
@@ -62,7 +62,7 @@ export function CartItemComponent({ item, onQuantityChange, onRemove }: CartItem
           </h3>
         </Link>
         <p className="text-xs text-muted-foreground font-light tracking-wide">
-          {item.size} · {item.color}
+          {item.size} · {item.variantInfo}
         </p>
         <p className="text-sm font-medium mt-1">RM {item.price.toFixed(2)}</p>
       </div>

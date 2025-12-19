@@ -19,7 +19,7 @@ export default async function EditProductPage({ params }: { params: Promise<{ id
 
   // In a real app, you would fetch the product data using the ID
   const productId = id;
-  
+
   // Mock data for demonstration
   const product = {
     id: productId,
@@ -28,10 +28,8 @@ export default async function EditProductPage({ params }: { params: Promise<{ id
     price: 29.99,
     stock: 45,
     description: "High-quality cotton t-shirt with a comfortable fit. Perfect for casual wear.",
-    category: "casual",
-    brand: "FlyCloth Original",
-    sizes: ['S', 'M', 'L', 'XL'],
-    colors: ['White', 'Black', 'Navy']
+    fits: ['regular'],
+    sizes: ['S', 'M', 'L', 'XL']
   };
 
   return (
@@ -64,8 +62,8 @@ export default async function EditProductPage({ params }: { params: Promise<{ id
           <CardContent className="space-y-6">
             <div className="space-y-2">
               <Label htmlFor="name">Product Name</Label>
-              <Input 
-                id="name" 
+              <Input
+                id="name"
                 defaultValue={product.name}
                 className="w-full"
               />
@@ -73,8 +71,8 @@ export default async function EditProductPage({ params }: { params: Promise<{ id
 
             <div className="space-y-2">
               <Label htmlFor="sku">SKU</Label>
-              <Input 
-                id="sku" 
+              <Input
+                id="sku"
                 defaultValue={product.sku}
                 className="w-full"
               />
@@ -83,8 +81,8 @@ export default async function EditProductPage({ params }: { params: Promise<{ id
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="price">Price ($)</Label>
-                <Input 
-                  id="price" 
+                <Input
+                  id="price"
                   type="number"
                   step="0.01"
                   defaultValue={product.price}
@@ -93,8 +91,8 @@ export default async function EditProductPage({ params }: { params: Promise<{ id
               </div>
               <div className="space-y-2">
                 <Label htmlFor="stock">Stock Quantity</Label>
-                <Input 
-                  id="stock" 
+                <Input
+                  id="stock"
                   type="number"
                   defaultValue={product.stock}
                   className="w-full"
@@ -104,38 +102,13 @@ export default async function EditProductPage({ params }: { params: Promise<{ id
 
             <div className="space-y-2">
               <Label htmlFor="description">Description</Label>
-              <textarea 
+              <textarea
                 id="description"
                 className="w-full min-h-[100px] px-3 py-2 border border-input bg-background text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 rounded-md"
                 defaultValue={product.description}
               />
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="category">Category</Label>
-                <select 
-                  id="category"
-                  defaultValue={product.category}
-                  className="w-full px-3 py-2 border border-input bg-background text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded-md"
-                >
-                  <option value="">Select Category</option>
-                  <option value="casual">Casual</option>
-                  <option value="formal">Formal</option>
-                  <option value="polo">Polo</option>
-                  <option value="graphic">Graphic Tee</option>
-                  <option value="tank">Tank Top</option>
-                </select>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="brand">Brand</Label>
-                <Input 
-                  id="brand" 
-                  defaultValue={product.brand}
-                  className="w-full"
-                />
-              </div>
-            </div>
           </CardContent>
         </Card>
 
@@ -157,7 +130,7 @@ export default async function EditProductPage({ params }: { params: Promise<{ id
                   <span className="text-sm text-muted-foreground">Image 2</span>
                 </div>
               </div>
-              
+
               <div className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-6 text-center">
                 <Upload className="w-6 h-6 text-muted-foreground mx-auto mb-2" />
                 <p className="text-sm text-muted-foreground mb-2">
@@ -170,11 +143,11 @@ export default async function EditProductPage({ params }: { params: Promise<{ id
             </CardContent>
           </Card>
 
-          {/* Size & Color Variants */}
+          {/* Variants: Size & Fit */}
           <Card>
             <CardHeader>
               <CardTitle>Variants</CardTitle>
-              <CardDescription>Available sizes and colors</CardDescription>
+              <CardDescription>Available sizes and fit types</CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
               <div className="space-y-2">
@@ -182,8 +155,8 @@ export default async function EditProductPage({ params }: { params: Promise<{ id
                 <div className="flex flex-wrap gap-2">
                   {['XS', 'S', 'M', 'L', 'XL', 'XXL'].map((size) => (
                     <label key={size} className="flex items-center space-x-2">
-                      <input 
-                        type="checkbox" 
+                      <input
+                        type="checkbox"
                         className="rounded"
                         defaultChecked={product.sizes.includes(size)}
                       />
@@ -194,27 +167,20 @@ export default async function EditProductPage({ params }: { params: Promise<{ id
               </div>
 
               <div className="space-y-2">
-                <Label>Available Colors</Label>
-                <div className="grid grid-cols-2 gap-2">
+                <Label>Available Fits</Label>
+                <div className="flex flex-wrap gap-3">
                   {[
-                    { name: 'White', value: '#ffffff' },
-                    { name: 'Black', value: '#000000' },
-                    { name: 'Navy', value: '#1e3a8a' },
-                    { name: 'Gray', value: '#6b7280' },
-                    { name: 'Red', value: '#dc2626' },
-                    { name: 'Blue', value: '#2563eb' }
-                  ].map((color) => (
-                    <label key={color.name} className="flex items-center space-x-2">
-                      <input 
-                        type="checkbox" 
+                    { name: 'Slim Fit', value: 'slim' },
+                    { name: 'Regular Fit', value: 'regular' },
+                    { name: 'Oversize Fit', value: 'oversize' }
+                  ].map((fit) => (
+                    <label key={fit.value} className="flex items-center space-x-2">
+                      <input
+                        type="checkbox"
                         className="rounded"
-                        defaultChecked={product.colors.includes(color.name)}
+                        defaultChecked={product.fits.includes(fit.value)}
                       />
-                      <div 
-                        className="w-4 h-4 rounded border"
-                        style={{ backgroundColor: color.value }}
-                      />
-                      <span className="text-sm">{color.name}</span>
+                      <span className="text-sm">{fit.name}</span>
                     </label>
                   ))}
                 </div>

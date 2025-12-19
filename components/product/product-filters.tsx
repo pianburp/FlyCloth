@@ -16,26 +16,24 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { Filter, X } from "lucide-react"
 
-interface Category {
-  id: string
-  name: string
-}
+const FIT_OPTIONS = [
+  { value: "all", label: "All Fits" },
+  { value: "slim", label: "Slim Fit" },
+  { value: "regular", label: "Regular Fit" },
+  { value: "oversize", label: "Oversize Fit" },
+]
 
-interface ProductFiltersProps {
-  categories: Category[]
-}
-
-export function ProductFilters({ categories }: ProductFiltersProps) {
+export function ProductFilters() {
   const router = useRouter()
   const searchParams = useSearchParams()
-  
-  const [category, setCategory] = useState(searchParams.get("category") || "all")
+
+  const [fit, setFit] = useState(searchParams.get("fit") || "all")
   const [minPrice, setMinPrice] = useState(searchParams.get("minPrice") || "")
   const [maxPrice, setMaxPrice] = useState(searchParams.get("maxPrice") || "")
 
   // Update local state when URL params change
   useEffect(() => {
-    setCategory(searchParams.get("category") || "all")
+    setFit(searchParams.get("fit") || "all")
     setMinPrice(searchParams.get("minPrice") || "")
     setMaxPrice(searchParams.get("maxPrice") || "")
   }, [searchParams])
@@ -44,19 +42,19 @@ export function ProductFilters({ categories }: ProductFiltersProps) {
   useEffect(() => {
     const timer = setTimeout(() => {
       const params = new URLSearchParams(searchParams.toString())
-      
-      const currentCat = searchParams.get("category") || "all"
+
+      const currentFit = searchParams.get("fit") || "all"
       const currentMin = searchParams.get("minPrice") || ""
       const currentMax = searchParams.get("maxPrice") || ""
 
-      if (category === currentCat && minPrice === currentMin && maxPrice === currentMax) {
+      if (fit === currentFit && minPrice === currentMin && maxPrice === currentMax) {
         return
       }
 
-      if (category && category !== "all") {
-        params.set("category", category)
+      if (fit && fit !== "all") {
+        params.set("fit", fit)
       } else {
-        params.delete("category")
+        params.delete("fit")
       }
 
       if (minPrice) {
@@ -76,37 +74,36 @@ export function ProductFilters({ categories }: ProductFiltersProps) {
     }, 500)
 
     return () => clearTimeout(timer)
-  }, [category, minPrice, maxPrice, router, searchParams])
+  }, [fit, minPrice, maxPrice, router, searchParams])
 
   const clearFilters = () => {
-    setCategory("all")
+    setFit("all")
     setMinPrice("")
     setMaxPrice("")
     router.push("/user#products")
   }
 
-  const hasActiveFilters = category !== "all" || minPrice !== "" || maxPrice !== ""
+  const hasActiveFilters = fit !== "all" || minPrice !== "" || maxPrice !== ""
 
   return (
     <div className="flex flex-col lg:flex-row gap-4 items-end lg:items-center bg-card p-4 rounded-lg border shadow-sm mb-6">
       <div className="flex flex-col sm:flex-row gap-4 w-full lg:w-auto flex-1">
-        <div className="space-y-2 w-full sm:w-[250px]">
-          <Label className="text-xs text-muted-foreground">Category</Label>
+        <div className="space-y-2 w-full sm:w-[200px]">
+          <Label className="text-xs text-muted-foreground">Fit Type</Label>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="outline" className="w-full justify-between">
-                {category === "all" ? "All Categories" : categories.find(c => c.id === category)?.name || "Select Category"}
+                {FIT_OPTIONS.find(f => f.value === fit)?.label || "All Fits"}
                 <Filter className="ml-2 h-4 w-4 opacity-50" />
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent className="w-[250px]">
-              <DropdownMenuLabel>Filter by Category</DropdownMenuLabel>
+            <DropdownMenuContent className="w-[200px]">
+              <DropdownMenuLabel>Filter by Fit</DropdownMenuLabel>
               <DropdownMenuSeparator />
-              <DropdownMenuRadioGroup value={category} onValueChange={setCategory}>
-                <DropdownMenuRadioItem value="all">All Categories</DropdownMenuRadioItem>
-                {categories.map((cat) => (
-                  <DropdownMenuRadioItem key={cat.id} value={cat.id}>
-                    {cat.name}
+              <DropdownMenuRadioGroup value={fit} onValueChange={setFit}>
+                {FIT_OPTIONS.map((option) => (
+                  <DropdownMenuRadioItem key={option.value} value={option.value}>
+                    {option.label}
                   </DropdownMenuRadioItem>
                 ))}
               </DropdownMenuRadioGroup>
@@ -119,11 +116,11 @@ export function ProductFilters({ categories }: ProductFiltersProps) {
           <div className="flex items-center gap-2">
             <div className="relative flex-1">
               <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">RM</span>
-              <Input 
-                placeholder="Min" 
-                type="number" 
+              <Input
+                placeholder="Min"
+                type="number"
                 min="0"
-                className="pl-10" 
+                className="pl-10"
                 value={minPrice}
                 onChange={(e) => setMinPrice(e.target.value)}
               />
@@ -131,11 +128,11 @@ export function ProductFilters({ categories }: ProductFiltersProps) {
             <span className="text-muted-foreground">-</span>
             <div className="relative flex-1">
               <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">RM</span>
-              <Input 
-                placeholder="Max" 
-                type="number" 
+              <Input
+                placeholder="Max"
+                type="number"
                 min="0"
-                className="pl-10" 
+                className="pl-10"
                 value={maxPrice}
                 onChange={(e) => setMaxPrice(e.target.value)}
               />

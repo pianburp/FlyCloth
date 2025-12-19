@@ -4,7 +4,7 @@ import { useState, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Minus, Plus, ShoppingCart, Check } from "lucide-react";
+import { Minus, Plus, ShoppingCart, Play } from "lucide-react";
 import { addToCart } from "./actions";
 import { createClient } from "@/lib/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
@@ -19,8 +19,8 @@ interface Product {
 interface Variant {
   id: string;
   size: string;
-  color: string;
-  color_hex: string;
+  fit: string;
+  gsm?: number;
   price: number;
   stock_quantity: number;
 }
@@ -28,6 +28,7 @@ interface Variant {
 interface ProductImage {
   storage_path: string;
   is_primary: boolean;
+  media_type?: 'image' | 'video';
 }
 
 interface ProductDetailsClientProps {
@@ -36,8 +37,11 @@ interface ProductDetailsClientProps {
   images: ProductImage[];
 }
 
+// Helper to check if media is video
+const isVideo = (media: ProductImage) => media.media_type === 'video';
+
 export default function ProductDetailsClient({ product, variants, images }: ProductDetailsClientProps) {
-  const [selectedColor, setSelectedColor] = useState<string | null>(null);
+  const [selectedFit, setSelectedFit] = useState<string | null>(null);
   const [selectedSize, setSelectedSize] = useState<string | null>(null);
   const [quantity, setQuantity] = useState(1);
   const [isAdding, setIsAdding] = useState(false);
@@ -46,17 +50,21 @@ export default function ProductDetailsClient({ product, variants, images }: Prod
   const supabase = useMemo(() => createClient(), []);
   const { toast } = useToast();
 
-  // Get unique colors and sizes
-  const colors = Array.from(new Set(variants.map(v => v.color))).map(color => {
-    const variant = variants.find(v => v.color === color);
-    return { name: color, hex: variant?.color_hex };
+  // Get unique fits and sizes
+  const fits = Array.from(new Set(variants.map(v => v.fit))).map(fit => {
+    const fitLabels: Record<string, string> = {
+      'slim': 'Slim Fit',
+      'regular': 'Regular Fit',
+      'oversize': 'Oversize Fit'
+    };
+    return { value: fit, label: fitLabels[fit] || fit };
   });
 
   const sizes = Array.from(new Set(variants.map(v => v.size)));
 
   // Find selected variant
   const selectedVariant = variants.find(
-    v => v.color === selectedColor && v.size === selectedSize
+    v => v.fit === selectedFit && v.size === selectedSize
   );
 
   const currentPrice = selectedVariant ? selectedVariant.price : product.base_price;
@@ -77,7 +85,7 @@ export default function ProductDetailsClient({ product, variants, images }: Prod
       } else {
         toast({
           title: "Added to cart",
-          description: `${quantity} x ${product.name} (${selectedSize}, ${selectedColor}) added to your cart.`,
+          description: `${quantity} x ${product.name} (${selectedSize}, ${fits.find(f => f.value === selectedFit)?.label}) added to your cart.`,
         });
       }
     } catch (error) {
@@ -92,41 +100,66 @@ export default function ProductDetailsClient({ product, variants, images }: Prod
     }
   };
 
-  const getImageUrl = (path: string) => {
+  const getMediaUrl = (path: string) => {
     if (!path) return null;
     return supabase.storage.from('product-images').getPublicUrl(path).data.publicUrl;
   };
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12">
-      {/* Image Gallery */}
+      {/* Media Gallery */}
       <div className="flex flex-col gap-4">
         <div className="aspect-[3/4] bg-muted/30 overflow-hidden flex items-center justify-center">
           {mainImage ? (
-            <img
-              src={getImageUrl(mainImage) || ''}
-              alt={product.name}
-              className="w-full h-full object-cover transition-transform duration-700 hover:scale-105"
-            />
+            // Check if current main media is a video
+            images.find(img => img.storage_path === mainImage)?.media_type === 'video' ? (
+              <video
+                src={getMediaUrl(mainImage) || ''}
+                className="w-full h-full object-cover"
+                controls
+                autoPlay
+                muted
+                loop
+              />
+            ) : (
+              <img
+                src={getMediaUrl(mainImage) || ''}
+                alt={product.name}
+                className="w-full h-full object-cover transition-transform duration-700 hover:scale-105"
+              />
+            )
           ) : (
-            <div className="text-muted-foreground/50 text-sm tracking-luxury uppercase">No Image</div>
+            <div className="text-muted-foreground/50 text-sm tracking-luxury uppercase">No Media</div>
           )}
         </div>
         <div className="flex gap-2 overflow-x-auto pb-2">
-          {images.map((img, idx) => (
+          {images.map((media, idx) => (
             <button
               key={idx}
-              onClick={() => setMainImage(img.storage_path)}
-              className={`w-20 h-24 overflow-hidden flex-shrink-0 transition-all duration-300 ${mainImage === img.storage_path
-                  ? 'ring-1 ring-foreground opacity-100'
-                  : 'opacity-60 hover:opacity-100'
+              onClick={() => setMainImage(media.storage_path)}
+              className={`relative w-20 h-24 overflow-hidden flex-shrink-0 transition-all duration-300 ${mainImage === media.storage_path
+                ? 'ring-1 ring-foreground opacity-100'
+                : 'opacity-60 hover:opacity-100'
                 }`}
             >
-              <img
-                src={getImageUrl(img.storage_path) || ''}
-                alt={`View ${idx + 1}`}
-                className="w-full h-full object-cover"
-              />
+              {isVideo(media) ? (
+                <>
+                  <video
+                    src={getMediaUrl(media.storage_path) || ''}
+                    className="w-full h-full object-cover"
+                    muted
+                  />
+                  <div className="absolute inset-0 flex items-center justify-center bg-black/30">
+                    <Play className="w-4 h-4 text-white" />
+                  </div>
+                </>
+              ) : (
+                <img
+                  src={getMediaUrl(media.storage_path) || ''}
+                  alt={`View ${idx + 1}`}
+                  className="w-full h-full object-cover"
+                />
+              )}
             </button>
           ))}
         </div>
@@ -148,26 +181,22 @@ export default function ProductDetailsClient({ product, variants, images }: Prod
         <div className="gold-divider" />
 
         <div className="space-y-6">
-          {/* Color Selection */}
+          {/* Fit Selection */}
           <div>
             <h3 className="text-xs tracking-luxury uppercase text-muted-foreground mb-4">
-              Color {selectedColor && <span className="text-foreground ml-2">— {selectedColor}</span>}
+              Fit {selectedFit && <span className="text-foreground ml-2">— {fits.find(f => f.value === selectedFit)?.label}</span>}
             </h3>
-            <div className="flex flex-wrap gap-3">
-              {colors.map((color) => (
+            <div className="flex flex-wrap gap-2">
+              {fits.map((fit) => (
                 <button
-                  key={color.name}
-                  onClick={() => setSelectedColor(color.name)}
-                  className={`w-10 h-10 rounded-full flex items-center justify-center transition-all duration-300 ${selectedColor === color.name
-                      ? 'ring-2 ring-offset-2 ring-foreground'
-                      : 'ring-1 ring-border hover:ring-foreground/50'
+                  key={fit.value}
+                  onClick={() => setSelectedFit(fit.value)}
+                  className={`px-4 py-2 text-sm font-light border transition-all duration-300 ${selectedFit === fit.value
+                    ? 'bg-foreground text-background border-foreground'
+                    : 'bg-transparent text-foreground border-border hover:border-foreground'
                     }`}
-                  style={{ backgroundColor: color.hex || '#eee' }}
-                  title={color.name}
                 >
-                  {selectedColor === color.name && (
-                    <Check className={`w-4 h-4 ${['white', '#ffffff', '#fff'].includes(color.hex?.toLowerCase() || '') ? 'text-black' : 'text-white'}`} />
-                  )}
+                  {fit.label}
                 </button>
               ))}
             </div>
@@ -180,7 +209,7 @@ export default function ProductDetailsClient({ product, variants, images }: Prod
             </h3>
             <div className="flex flex-wrap gap-2">
               {sizes.map((size) => {
-                const isAvailable = !selectedColor || variants.some(v => v.color === selectedColor && v.size === size && v.stock_quantity > 0);
+                const isAvailable = !selectedFit || variants.some(v => v.fit === selectedFit && v.size === size && v.stock_quantity > 0);
 
                 return (
                   <button
@@ -188,8 +217,8 @@ export default function ProductDetailsClient({ product, variants, images }: Prod
                     onClick={() => setSelectedSize(size)}
                     disabled={!isAvailable}
                     className={`w-12 h-12 text-sm font-light border transition-all duration-300 ${selectedSize === size
-                        ? 'bg-foreground text-background border-foreground'
-                        : 'bg-transparent text-foreground border-border hover:border-foreground'
+                      ? 'bg-foreground text-background border-foreground'
+                      : 'bg-transparent text-foreground border-border hover:border-foreground'
                       } ${!isAvailable ? 'opacity-30 cursor-not-allowed line-through' : ''}`}
                   >
                     {size}
@@ -198,6 +227,17 @@ export default function ProductDetailsClient({ product, variants, images }: Prod
               })}
             </div>
           </div>
+
+          {/* GSM Info */}
+          {selectedVariant?.gsm && (
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <span className="text-xs tracking-luxury uppercase">Fabric Weight:</span>
+              <span className="font-medium text-foreground">{selectedVariant.gsm} GSM</span>
+              <span className="text-xs">
+                {selectedVariant.gsm <= 150 ? '(Lightweight)' : selectedVariant.gsm <= 180 ? '(Standard)' : '(Heavyweight)'}
+              </span>
+            </div>
+          )}
 
           {/* Quantity */}
           <div>
@@ -244,9 +284,9 @@ export default function ProductDetailsClient({ product, variants, images }: Prod
               )}
             </Button>
 
-            {!selectedColor || !selectedSize ? (
+            {!selectedFit || !selectedSize ? (
               <p className="text-xs text-muted-foreground text-center font-light">
-                Please select a color and size to continue
+                Please select a fit and size to continue
               </p>
             ) : null}
           </div>

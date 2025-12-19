@@ -16,7 +16,7 @@ interface CartItem {
   name: string;
   price: number;
   size: string;
-  color: string;
+  variantInfo: string;
   quantity: number;
   image: string;
 }

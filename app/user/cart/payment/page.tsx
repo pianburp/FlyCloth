@@ -22,7 +22,8 @@ export default async function PaymentPage() {
       product_variants (
         id,
         size,
-        color,
+        fit,
+        gsm,
         price,
         products (
           name,
@@ -54,13 +55,17 @@ export default async function PaymentPage() {
       ? supabase.storage.from('product-images').getPublicUrl(primaryImage.storage_path).data.publicUrl
       : null;
 
+    // Build variant info string from fit and gsm
+    const fitLabel = variant.fit === 'slim' ? 'Slim Fit' : variant.fit === 'oversize' ? 'Oversize Fit' : 'Regular Fit';
+    const variantInfo = variant.gsm ? `${fitLabel} · ${variant.gsm}g` : fitLabel;
+
     return {
       id: item.id,
       variantId: variant.id,
       name: product.name,
       price: Number(variant.price),
       size: variant.size,
-      color: variant.color,
+      variantInfo: variantInfo,
       quantity: item.quantity,
       image: imageUrl || ""
     };

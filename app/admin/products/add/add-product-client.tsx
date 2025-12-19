@@ -5,27 +5,32 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { ArrowLeft, Upload, Save, X, Loader2, Zap } from "lucide-react";
+import { Upload, Save, X, Loader2, Play } from "lucide-react";
 import Link from "next/link";
-import { useState, useCallback, useEffect, useMemo } from "react";
+import { useState, useCallback, useMemo } from "react";
 import { createClient } from "@/lib/supabase/client";
 
-const COLORS = [
-  { name: 'White', value: '#ffffff' },
-  { name: 'Black', value: '#000000' },
-  { name: 'Navy', value: '#1e3a8a' },
-  { name: 'Gray', value: '#6b7280' },
-  { name: 'Red', value: '#dc2626' },
-  { name: 'Blue', value: '#2563eb' }
+const SIZES = ['XS', 'S', 'M', 'L', 'XL', 'XXL'];
+
+const FITS = [
+  { name: 'Slim Fit', value: 'slim' },
+  { name: 'Regular Fit', value: 'regular' },
+  { name: 'Oversize Fit', value: 'oversize' }
 ];
 
-const SIZES = ['XS', 'S', 'M', 'L', 'XL', 'XXL'];
+const GSMS = [
+  { name: '150 GSM (Lightweight)', value: 150 },
+  { name: '180 GSM (Standard)', value: 180 },
+  { name: '220 GSM (Heavyweight)', value: 220 }
+];
+
+// Helper to check if file is video
+const isVideoFile = (file: File) => file.type.startsWith('video/');
 
 export default function AddProductClient() {
   const router = useRouter();
   const supabase = useMemo(() => createClient(), []);
   const [loading, setLoading] = useState(false);
-  const [categories, setCategories] = useState<any[]>([]);
 
   // Form State
   const [formData, setFormData] = useState({
@@ -34,25 +39,15 @@ export default function AddProductClient() {
     price: "",
     stock: "",
     description: "",
-    categoryId: "",
-    brand: "",
   });
 
   const [selectedSizes, setSelectedSizes] = useState<string[]>([]);
-  const [selectedColors, setSelectedColors] = useState<string[]>([]); // Store color names
+  const [selectedFits, setSelectedFits] = useState<string[]>(['regular']); // Default to regular fit
+  const [selectedGsms, setSelectedGsms] = useState<number[]>([180]); // Default to 180 GSM
 
   const [dragActive, setDragActive] = useState(false);
   const [files, setFiles] = useState<File[]>([]);
   const [previewUrls, setPreviewUrls] = useState<string[]>([]);
-  const [syncToStripe, setSyncToStripe] = useState(true); // Default to syncing
-
-  useEffect(() => {
-    const fetchCategories = async () => {
-      const { data } = await supabase.from('categories').select('*');
-      if (data) setCategories(data);
-    };
-    fetchCategories();
-  }, [supabase]);
 
   const handleDrag = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -109,14 +104,20 @@ export default function AddProductClient() {
     );
   };
 
-  const toggleColor = (colorName: string) => {
-    setSelectedColors(prev =>
-      prev.includes(colorName) ? prev.filter(c => c !== colorName) : [...prev, colorName]
+  const toggleFit = (fit: string) => {
+    setSelectedFits(prev =>
+      prev.includes(fit) ? prev.filter(f => f !== fit) : [...prev, fit]
+    );
+  };
+
+  const toggleGsm = (gsm: number) => {
+    setSelectedGsms(prev =>
+      prev.includes(gsm) ? prev.filter(g => g !== gsm) : [...prev, gsm]
     );
   };
 
   const handleSave = async () => {
-    if (!formData.name || !formData.sku || !formData.price || !formData.categoryId) {
+    if (!formData.name || !formData.sku || !formData.price) {
       alert("Please fill in all required fields");
       return;
     }
@@ -131,7 +132,6 @@ export default function AddProductClient() {
           description: formData.description,
           sku: formData.sku,
           base_price: parseFloat(formData.price),
-          category_id: formData.categoryId,
           is_active: true,
           featured: false
         })
@@ -140,9 +140,9 @@ export default function AddProductClient() {
 
       if (productError) throw productError;
 
-      // 2. Upload Images & Insert Records
+      // 2. Upload Media (Images & Videos) & Insert Records
       if (files.length > 0) {
-        const imagePromises = files.map(async (file, index) => {
+        const mediaPromises = files.map(async (file, index) => {
           const fileExt = file.name.split('.').pop();
           const fileName = `${product.id}/${Date.now()}-${index}.${fileExt}`;
           const { error: uploadError } = await supabase.storage
@@ -154,51 +154,54 @@ export default function AddProductClient() {
           return {
             product_id: product.id,
             storage_path: fileName,
-            is_primary: index === 0,
+            media_type: isVideoFile(file) ? 'video' : 'image',
+            is_primary: index === 0 && !isVideoFile(file), // First image is primary
             sort_order: index
           };
         });
 
-        const imageRecords = await Promise.all(imagePromises);
-        const { error: imagesError } = await supabase
+        const mediaRecords = await Promise.all(mediaPromises);
+        const { error: mediaError } = await supabase
           .from('product_images')
-          .insert(imageRecords);
+          .insert(mediaRecords);
 
-        if (imagesError) throw imagesError;
+        if (mediaError) throw mediaError;
       }
 
-      // 3. Create Variants
+      // 3. Create Variants (Size x Fit combinations with GSM)
       const variants = [];
-      // If no sizes/colors selected, create one default variant
-      if (selectedSizes.length === 0 && selectedColors.length === 0) {
+      // If no sizes/fits/gsms selected, create one default variant
+      if (selectedSizes.length === 0 && selectedFits.length === 0 && selectedGsms.length === 0) {
         variants.push({
           product_id: product.id,
           sku: `${formData.sku}-DEFAULT`,
           size: 'ONESIZE',
-          color: 'Default',
-          color_hex: '#000000',
+          fit: 'regular',
+          gsm: 180,
           price: parseFloat(formData.price),
           stock_quantity: parseInt(formData.stock) || 0,
           is_active: true
         });
       } else {
-        // Cartesian product
+        // Cartesian product of sizes, fits, and gsms
         const sizes = selectedSizes.length > 0 ? selectedSizes : ['ONESIZE'];
-        const colors = selectedColors.length > 0 ? selectedColors : ['Default'];
+        const fits = selectedFits.length > 0 ? selectedFits : ['regular'];
+        const gsms = selectedGsms.length > 0 ? selectedGsms : [180];
 
         for (const size of sizes) {
-          for (const colorName of colors) {
-            const colorObj = COLORS.find(c => c.name === colorName) || { name: 'Default', value: '#000000' };
-            variants.push({
-              product_id: product.id,
-              sku: `${formData.sku}-${size}-${colorName}`.toUpperCase().replace(/\s+/g, '-'),
-              size: size,
-              color: colorName,
-              color_hex: colorObj.value,
-              price: parseFloat(formData.price),
-              stock_quantity: parseInt(formData.stock) || 0,
-              is_active: true
-            });
+          for (const fit of fits) {
+            for (const gsm of gsms) {
+              variants.push({
+                product_id: product.id,
+                sku: `${formData.sku}-${size}-${fit}-${gsm}`.toUpperCase().replace(/\s+/g, '-'),
+                size: size,
+                fit: fit,
+                gsm: gsm,
+                price: parseFloat(formData.price),
+                stock_quantity: parseInt(formData.stock) || 0,
+                is_active: true
+              });
+            }
           }
         }
       }
@@ -209,22 +212,20 @@ export default function AddProductClient() {
 
       if (variantsError) throw variantsError;
 
-      // 4. Sync to Stripe if enabled
-      if (syncToStripe) {
-        try {
-          const syncResponse = await fetch('/api/stripe/sync-product', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ productId: product.id }),
-          });
+      // 4. Sync to Stripe
+      try {
+        const syncResponse = await fetch('/api/stripe/sync-product', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ productId: product.id }),
+        });
 
-          if (!syncResponse.ok) {
-            console.warn('Failed to sync product to Stripe, but product was created successfully');
-          }
-        } catch (syncError) {
-          console.warn('Failed to sync to Stripe:', syncError);
-          // Don't throw - product was created successfully, just not synced
+        if (!syncResponse.ok) {
+          console.warn('Failed to sync product to Stripe, but product was created successfully');
         }
+      } catch (syncError) {
+        console.warn('Failed to sync to Stripe:', syncError);
+        // Don't throw - product was created successfully, just not synced
       }
 
       router.push('/admin/products');
@@ -315,42 +316,17 @@ export default function AddProductClient() {
               />
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="categoryId">Category</Label>
-                <select
-                  id="categoryId"
-                  value={formData.categoryId}
-                  onChange={handleInputChange}
-                  className="w-full px-3 py-2 border border-input bg-background text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded-md"
-                >
-                  <option value="">Select Category</option>
-                  {categories.map(cat => (
-                    <option key={cat.id} value={cat.id}>{cat.name}</option>
-                  ))}
-                </select>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="brand">Brand</Label>
-                <Input
-                  id="brand"
-                  value={formData.brand}
-                  onChange={handleInputChange}
-                  placeholder="e.g., FlyCloth Original"
-                  className="w-full"
-                />
-              </div>
-            </div>
+
           </CardContent>
         </Card>
 
         {/* Product Variants & Images */}
         <div className="space-y-6 sm:space-y-8">
-          {/* Product Images */}
+          {/* Product Media (Images & Videos) */}
           <Card>
             <CardHeader>
-              <CardTitle>Product Images</CardTitle>
-              <CardDescription>Upload product photos</CardDescription>
+              <CardTitle>Product Media</CardTitle>
+              <CardDescription>Upload product photos and videos</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div
@@ -366,31 +342,40 @@ export default function AddProductClient() {
                   Click to upload or drag and drop
                 </p>
                 <p className="text-xs text-muted-foreground">
-                  PNG, JPG, GIF up to 10MB
+                  Images (PNG, JPG, GIF) and Videos (MP4, WebM) up to 50MB
                 </p>
                 <Input
-                  id="image-upload"
+                  id="media-upload"
                   type="file"
                   multiple
-                  accept="image/*"
+                  accept="image/*,video/*"
                   className="hidden"
                   onChange={handleChange}
                 />
                 <Button
                   variant="outline"
                   className="mt-4"
-                  onClick={() => document.getElementById('image-upload')?.click()}
+                  onClick={() => document.getElementById('media-upload')?.click()}
                 >
                   Choose Files
                 </Button>
               </div>
 
-              {/* Image Previews */}
+              {/* Media Previews */}
               {previewUrls.length > 0 && (
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4 mt-4">
                   {previewUrls.map((url, index) => (
                     <div key={url} className="relative aspect-square rounded-md overflow-hidden border">
-                      <img src={url} alt={`Preview ${index}`} className="w-full h-full object-cover" />
+                      {files[index] && isVideoFile(files[index]) ? (
+                        <>
+                          <video src={url} className="w-full h-full object-cover" muted />
+                          <div className="absolute inset-0 flex items-center justify-center bg-black/30">
+                            <Play className="w-8 h-8 text-white" />
+                          </div>
+                        </>
+                      ) : (
+                        <img src={url} alt={`Preview ${index}`} className="w-full h-full object-cover" />
+                      )}
                       <button
                         onClick={() => removeFile(index)}
                         className="absolute top-1 right-1 bg-destructive text-destructive-foreground rounded-full p-1 hover:bg-destructive/90 transition-colors"
@@ -404,38 +389,12 @@ export default function AddProductClient() {
             </CardContent>
           </Card>
 
-          {/* Stripe Integration */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Zap className="w-5 h-5 text-blue-600" />
-                Stripe Integration
-              </CardTitle>
-              <CardDescription>Sync this product with Stripe for payments</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <label className="flex items-center space-x-3 cursor-pointer">
-                <input
-                  type="checkbox"
-                  className="rounded w-5 h-5"
-                  checked={syncToStripe}
-                  onChange={(e) => setSyncToStripe(e.target.checked)}
-                />
-                <div>
-                  <span className="font-medium">Create in Stripe</span>
-                  <p className="text-sm text-muted-foreground">
-                    Automatically create a Stripe Product and Price for checkout
-                  </p>
-                </div>
-              </label>
-            </CardContent>
-          </Card>
 
-          {/* Size & Color Variants */}
+          {/* Variants: Size, Fit & GSM */}
           <Card>
             <CardHeader>
               <CardTitle>Variants</CardTitle>
-              <CardDescription>Available sizes and colors</CardDescription>
+              <CardDescription>Available sizes, fit types, and fabric weight</CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
               <div className="space-y-2">
@@ -456,21 +415,34 @@ export default function AddProductClient() {
               </div>
 
               <div className="space-y-2">
-                <Label>Available Colors</Label>
-                <div className="grid grid-cols-2 gap-2">
-                  {COLORS.map((color) => (
-                    <label key={color.name} className="flex items-center space-x-2 cursor-pointer">
+                <Label>Available Fits</Label>
+                <div className="flex flex-wrap gap-3">
+                  {FITS.map((fit) => (
+                    <label key={fit.value} className="flex items-center space-x-2 cursor-pointer">
                       <input
                         type="checkbox"
                         className="rounded"
-                        checked={selectedColors.includes(color.name)}
-                        onChange={() => toggleColor(color.name)}
+                        checked={selectedFits.includes(fit.value)}
+                        onChange={() => toggleFit(fit.value)}
                       />
-                      <div
-                        className="w-4 h-4 rounded border"
-                        style={{ backgroundColor: color.value }}
+                      <span className="text-sm">{fit.name}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label>Available Fabric Weights (GSM)</Label>
+                <div className="flex flex-wrap gap-3">
+                  {GSMS.map((gsm) => (
+                    <label key={gsm.value} className="flex items-center space-x-2 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        className="rounded"
+                        checked={selectedGsms.includes(gsm.value)}
+                        onChange={() => toggleGsm(gsm.value)}
                       />
-                      <span className="text-sm">{color.name}</span>
+                      <span className="text-sm">{gsm.name}</span>
                     </label>
                   ))}
                 </div>

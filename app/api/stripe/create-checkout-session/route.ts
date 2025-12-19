@@ -62,7 +62,7 @@ export async function POST(request: NextRequest) {
           currency: 'myr',
           product_data: {
             name: item.name,
-            description: `${item.color} / ${item.size}`,
+            description: `${item.size} / ${item.variantInfo}`,
           },
           unit_amount: Math.round(item.price * 100), // Convert to cents
         },
@@ -87,7 +87,7 @@ export async function POST(request: NextRequest) {
           cartItems.map((item: any) => ({
             variantId: item.variantId,
             name: item.name,
-            color: item.color,
+            variantInfo: item.variantInfo,
             size: item.size,
             quantity: item.quantity,
             price: item.price,

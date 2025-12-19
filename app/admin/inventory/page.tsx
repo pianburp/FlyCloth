@@ -12,8 +12,8 @@ export interface VariantWithProduct {
     id: string;
     sku: string;
     size: string;
-    color: string;
-    color_hex: string | null;
+    fit: string;
+    gsm: number | null;
     price: number;
     stock_quantity: number;
     is_active: boolean;
@@ -38,8 +38,8 @@ export default async function InventoryPage() {
       id,
       sku,
       size,
-      color,
-      color_hex,
+      fit,
+      gsm,
       price,
       stock_quantity,
       is_active,

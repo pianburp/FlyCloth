@@ -22,28 +22,6 @@ function createCacheClient() {
 }
 
 /**
- * Get all categories with caching (10 minutes TTL)
- * Categories rarely change, so longer cache is appropriate
- */
-export const getCachedCategories = unstable_cache(
-  async () => {
-    const supabase = createCacheClient();
-    const { data, error } = await supabase
-      .from('categories')
-      .select('id, name')
-      .order('name');
-    
-    if (error) {
-      console.error('Error fetching categories:', error);
-      return [];
-    }
-    return data || [];
-  },
-  ['categories'],
-  { revalidate: 600 } // 10 minutes
-);
-
-/**
  * Get featured products with caching (1 minute TTL)
  * Featured products may change more frequently
  */
@@ -52,8 +30,8 @@ export const getCachedFeaturedProducts = unstable_cache(
     const supabase = createCacheClient();
     const { data, error } = await supabase
       .from('products')
-      .select('*, product_images(storage_path), product_variants(stock_quantity)')
-      .eq('featured', true)
+      .select('*, product_images(storage_path, media_type), product_variants(stock_quantity)')
+      .eq('is_featured', true)
       .eq('is_active', true)
       .limit(3);
     

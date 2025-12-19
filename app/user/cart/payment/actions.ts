@@ -41,7 +41,7 @@ export async function createOrder(
     order_id: order.id,
     variant_id: item.variantId,
     product_name: item.name,
-    variant_info: `${item.color} / ${item.size}`,
+    variant_info: `${item.size} / ${item.variantInfo}`,
     quantity: item.quantity,
     unit_price: item.price
   }));

@@ -13,7 +13,7 @@ export const cartRouter = router({
           z.object({
             variantId: z.string(),
             name: z.string(),
-            color: z.string(),
+            variantInfo: z.string(),
             size: z.string(),
             quantity: z.number().int().positive(),
             price: z.number().positive(),
@@ -56,7 +56,7 @@ export const cartRouter = router({
         order_id: order.id,
         variant_id: item.variantId,
         product_name: item.name,
-        variant_info: `${item.color} / ${item.size}`,
+        variant_info: `${item.size} / ${item.variantInfo}`,
         quantity: item.quantity,
         unit_price: item.price,
       }));

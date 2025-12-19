@@ -25,7 +25,7 @@ export function InventoryTable({ items }: InventoryTableProps) {
         const matchesSearch =
             item.product_name.toLowerCase().includes(searchLower) ||
             item.sku.toLowerCase().includes(searchLower) ||
-            item.color.toLowerCase().includes(searchLower) ||
+            item.fit.toLowerCase().includes(searchLower) ||
             item.size.toLowerCase().includes(searchLower);
 
         // Stock filter
@@ -72,7 +72,7 @@ export function InventoryTable({ items }: InventoryTableProps) {
                 <div className="relative flex-1">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                     <Input
-                        placeholder="Search by product, SKU, color, size..."
+                        placeholder="Search by product, SKU, fit, size..."
                         value={search}
                         onChange={(e) => setSearch(e.target.value)}
                         className="pl-10"
@@ -127,14 +127,10 @@ export function InventoryTable({ items }: InventoryTableProps) {
                                 </td>
                                 <td className="py-3 px-2">
                                     <div className="flex items-center gap-2">
-                                        {item.color_hex && (
-                                            <div
-                                                className="w-4 h-4 rounded-full border"
-                                                style={{ backgroundColor: item.color_hex }}
-                                                title={item.color}
-                                            />
+                                        <span>{item.size} / {item.fit}</span>
+                                        {item.gsm && (
+                                            <span className="text-xs text-muted-foreground">({item.gsm}g)</span>
                                         )}
-                                        <span>{item.size} / {item.color}</span>
                                     </div>
                                     <p className="text-xs text-muted-foreground">{item.sku}</p>
                                 </td>
