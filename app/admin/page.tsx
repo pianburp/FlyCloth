@@ -1,4 +1,5 @@
-import { getCachedUserProfile } from "@/lib/rbac";
+import { getCachedUserProfile, requireAdmin } from "@/lib/rbac";
+import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { ShirtIcon, PackageIcon, DollarSignIcon, UsersIcon, AlertTriangle } from "lucide-react";
@@ -8,6 +9,13 @@ import Link from "next/link";
 export const dynamic = 'force-dynamic';
 
 export default async function AdminDashboard() {
+  // Security: Explicit admin check (defense in depth, not relying on middleware alone)
+  try {
+    await requireAdmin();
+  } catch {
+    redirect("/user");
+  }
+
   const supabase = await createClient();
 
   const [

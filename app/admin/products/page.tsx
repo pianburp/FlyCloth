@@ -67,6 +67,11 @@ export default async function ProductsPage() {
 
   async function deleteProduct(formData: FormData) {
     'use server'
+
+    // Security: Always self-authorize destructive actions
+    const { requireAdmin } = await import('@/lib/rbac');
+    await requireAdmin();
+
     const id = formData.get('id') as string;
     if (!id) return;
 
