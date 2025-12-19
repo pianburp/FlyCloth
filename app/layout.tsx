@@ -13,12 +13,9 @@ export const metadata: Metadata = {
   title: "FlyCloth | Custom Tailored & Luxury Fashion",
   description: "Discover timeless elegance and contemporary luxury. FlyCloth - Where tradition meets innovation.",
   icons: {
-    icon: "/favicon.svg",
-    shortcut: "/favicon.svg",
-    apple: "/favicon.svg",
-    other: [
-      { rel: "manifest", url: "/site.webmanifest" },
-    ],
+    icon: "/favicon.ico",
+    shortcut: "/favicon.ico",
+    apple: "/favicon.ico",
   },
 };
 
