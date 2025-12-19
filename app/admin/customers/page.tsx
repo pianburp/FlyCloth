@@ -1,6 +1,7 @@
 import { requireAdmin } from "@/lib/rbac";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { createServiceClient } from "@/lib/supabase/service";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Users } from "lucide-react";
 import { CustomerTable } from "./customer-table";
@@ -26,6 +27,7 @@ export default async function CustomersPage() {
     }
 
     const supabase = await createClient();
+    const serviceClient = createServiceClient();
 
     // Fetch all profiles with their order statistics
     const { data: profiles, error: profilesError } = await supabase
@@ -44,8 +46,8 @@ export default async function CustomersPage() {
         console.error("Error fetching profiles:", profilesError);
     }
 
-    // Fetch auth users to get emails
-    const { data: authData } = await supabase.auth.admin.listUsers();
+    // Fetch auth users to get emails (requires service role key)
+    const { data: authData } = await serviceClient.auth.admin.listUsers();
     const authUsers = authData?.users || [];
 
     // Fetch all orders for statistics
