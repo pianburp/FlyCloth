@@ -18,10 +18,8 @@ function getStripeClient(): Stripe {
   if (!isStripeEnabled()) {
     throw new Error('STRIPE_SECRET_KEY is not set or invalid. Please configure your Stripe secrets.');
   }
-  return new Stripe(stripeSecretKey!, {
-    apiVersion: '2025-11-17' as Stripe.LatestApiVersion,
-    typescript: true,
-  });
+  // Use the latest API version bundled with this Stripe SDK
+  return new Stripe(stripeSecretKey!);
 }
 
 // Lazy-loaded Stripe instance (only created when needed)

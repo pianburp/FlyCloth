@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { ArrowLeft, Save, X, Loader2, Upload } from "lucide-react";
+import { Save, X, Loader2, Upload } from "lucide-react";
 import Link from "next/link";
 import { useState, useMemo } from "react";
 import { createClient } from "@/lib/supabase/client";
@@ -150,7 +150,14 @@ export default function EditProductClient({ product: initialProduct, images: ini
 
     const handleSaveAll = async () => {
         setLoading(true);
+
         try {
+            // Ensure browser Supabase client has a valid session
+            const { data: { session } } = await supabase.auth.getSession();
+            if (!session) {
+                throw new Error('Session expired. Please log in again.');
+            }
+
             // 1. Update Product Details
             const { error: productError } = await supabase
                 .from('products')
@@ -220,18 +227,15 @@ export default function EditProductClient({ product: initialProduct, images: ini
                     });
                 }
             } catch (syncError: any) {
-                console.warn('Failed to sync to Stripe:', syncError);
                 toast({
                     variant: "destructive",
                     title: "Product Saved",
                     description: "Product saved but Stripe sync failed."
                 });
             }
-
             router.refresh(); // Refresh server state
 
         } catch (error: any) {
-            console.error(error);
             toast({ variant: "destructive", title: "Error", description: error.message });
         } finally {
             setLoading(false);

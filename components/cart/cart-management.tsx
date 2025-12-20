@@ -3,7 +3,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { CartItemComponent } from "./cart-item";
 import Link from "next/link";
 import { ShoppingCart } from "lucide-react";
@@ -28,7 +27,6 @@ interface CartManagementProps {
 
 export function CartManagement({ initialItems, userId }: CartManagementProps) {
   const [cartItems, setCartItems] = useState<CartItem[]>(initialItems);
-  const [couponCode, setCouponCode] = useState("");
   const router = useRouter();
   const supabase = useMemo(() => createClient(), []);
 
@@ -88,11 +86,6 @@ export function CartManagement({ initialItems, userId }: CartManagementProps) {
     if (error) {
       console.error('Error removing item:', error);
     }
-  };
-
-  const handleApplyCoupon = () => {
-    // Handle coupon application logic here
-    console.log("Applying coupon:", couponCode);
   };
 
   const subtotal = cartItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
@@ -184,31 +177,7 @@ export function CartManagement({ initialItems, userId }: CartManagementProps) {
           </div>
         </div>
 
-        {/* Promo Code */}
-        <div className="luxury-card overflow-hidden">
-          <div className="px-6 py-4 border-b border-border/40">
-            <h3 className="text-sm tracking-luxury uppercase text-muted-foreground">
-              Promo Code
-            </h3>
-          </div>
-          <div className="p-6">
-            <div className="flex gap-2">
-              <Input
-                placeholder="Enter code"
-                value={couponCode}
-                onChange={(e) => setCouponCode(e.target.value)}
-                className="luxury-input text-sm"
-              />
-              <Button
-                variant="outline"
-                onClick={handleApplyCoupon}
-                className="text-xs tracking-luxury uppercase shrink-0"
-              >
-                Apply
-              </Button>
-            </div>
-          </div>
-        </div>
+
       </div>
     </div>
   );

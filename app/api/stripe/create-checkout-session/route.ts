@@ -12,7 +12,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { cartItems, promoCode } = body;
+    const { cartItems } = body;
 
     if (!cartItems || cartItems.length === 0) {
       return NextResponse.json({ error: 'Cart is empty' }, { status: 400 });
@@ -75,7 +75,7 @@ export async function POST(request: NextRequest) {
 
     // Build checkout session options
     const sessionOptions: any = {
-      payment_method_types: ['card', 'grabpay', 'fpx'], // Popular Malaysian payment methods
+      payment_method_types: ['card', 'grabpay'], // Popular Malaysian payment methods (fpx disabled - not activated in Stripe dashboard)
       mode: 'payment',
       line_items: lineItems,
       success_url: `${appUrl}/user/cart/payment/success?session_id={CHECKOUT_SESSION_ID}`,
@@ -99,25 +99,8 @@ export async function POST(request: NextRequest) {
       },
     };
 
-    // Apply promotion code if provided
-    if (promoCode) {
-      const promotionCodes = await stripe.promotionCodes.list({
-        code: promoCode,
-        active: true,
-        limit: 1,
-      });
-
-      if (promotionCodes.data.length > 0) {
-        sessionOptions.discounts = [
-          { promotion_code: promotionCodes.data[0].id },
-        ];
-      }
-    }
-
-    // Allow promotion codes to be entered at checkout
-    if (!promoCode) {
-      sessionOptions.allow_promotion_codes = true;
-    }
+    // Always allow promotion codes to be entered at Stripe checkout
+    sessionOptions.allow_promotion_codes = true;
 
     // Create Stripe checkout session
     const session = await stripe.checkout.sessions.create(sessionOptions);

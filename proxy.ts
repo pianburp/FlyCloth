@@ -1,6 +1,7 @@
 import { updateSession } from "@/lib/supabase/proxy";
 import { type NextRequest } from "next/server";
 
+// Next.js 16+ Proxy - handles auth and session management
 export async function proxy(request: NextRequest) {
   return await updateSession(request);
 }

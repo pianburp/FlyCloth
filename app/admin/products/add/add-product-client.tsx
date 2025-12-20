@@ -127,7 +127,15 @@ export default function AddProductClient() {
     }
 
     setLoading(true);
+
     try {
+      // Ensure browser Supabase client has a valid session
+      // This is needed for RLS-protected DB operations (separate from proxy auth)
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        throw new Error('Session expired. Please log in again.');
+      }
+
       // 1. Insert Product
       const { data: product, error: productError } = await supabase
         .from('products')
@@ -142,7 +150,14 @@ export default function AddProductClient() {
         .select()
         .single();
 
-      if (productError) throw productError;
+
+      if (productError) {
+        throw new Error(`Failed to insert product: ${productError.message}`);
+      }
+
+      if (!product) {
+        throw new Error('Product insert returned no data - this may be an RLS policy issue');
+      }
 
       // 2. Upload Media (Images & Videos) & Insert Records
       if (files.length > 0) {
@@ -232,7 +247,6 @@ export default function AddProductClient() {
             description: `Product synced to Stripe successfully.`,
           });
         } else {
-          console.warn('Stripe sync failed:', syncResult.error);
           toast({
             variant: "destructive",
             title: "Product Created (Stripe sync failed)",
@@ -240,7 +254,6 @@ export default function AddProductClient() {
           });
         }
       } catch (syncError: any) {
-        console.warn('Failed to sync to Stripe:', syncError);
         toast({
           variant: "destructive",
           title: "Product Created (Stripe sync failed)",
@@ -251,7 +264,6 @@ export default function AddProductClient() {
       router.push('/admin/products');
       router.refresh();
     } catch (error: any) {
-      console.error('Error saving product:', error);
       toast({
         variant: "destructive",
         title: "Error",

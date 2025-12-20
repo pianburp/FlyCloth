@@ -5,8 +5,6 @@ import { trpc } from "@/lib/trpc/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft } from "lucide-react";
-import Link from "next/link";
 import { useToast } from "@/components/ui/use-toast";
 
 interface OrderItem {
@@ -74,18 +72,11 @@ export default function OrderDetailsClient({ order }: { order: Order }) {
 
   return (
     <div className="flex flex-col gap-6 sm:gap-8">
-      <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
-        <Link href="/admin/orders">
-          <Button variant="outline" size="icon" className="w-8 h-8 sm:w-10 sm:h-10">
-            <ArrowLeft className="w-4 h-4" />
-          </Button>
-        </Link>
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-bold mb-1 sm:mb-2">Order Details</h1>
-          <p className="text-sm sm:text-base text-muted-foreground">
-            Manage order #{order.id.slice(0, 8)}
-          </p>
-        </div>
+      <div>
+        <h1 className="text-2xl sm:text-3xl font-bold mb-1 sm:mb-2">Order Details</h1>
+        <p className="text-sm sm:text-base text-muted-foreground">
+          Manage order #{order.id.slice(0, 8)}
+        </p>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 sm:gap-8">

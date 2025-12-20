@@ -1,23 +1,15 @@
 "use client";
 
 import { useState } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import {
-  ArrowLeft,
   CreditCard,
   Shield,
-  Gift,
   Receipt,
   ShirtIcon,
   Loader2,
   ExternalLink,
-  CheckCircle,
-  AlertCircle
 } from "lucide-react";
-import Link from "next/link";
 
 interface CartItem {
   id: string;
@@ -36,9 +28,6 @@ interface PaymentClientProps {
 }
 
 export default function PaymentClient({ cartItems, userEmail }: PaymentClientProps) {
-  const [promoCode, setPromoCode] = useState("");
-  const [promoStatus, setPromoStatus] = useState<"idle" | "validating" | "valid" | "invalid">("idle");
-  const [promoDetails, setPromoDetails] = useState<any>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -46,45 +35,7 @@ export default function PaymentClient({ cartItems, userEmail }: PaymentClientPro
   const subtotal = cartItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
   const tax = subtotal * 0.08;
   const baseShipping = subtotal > 50 ? 0 : 9.99;
-
-  // Apply promo discount if valid
-  let discount = 0;
-  if (promoStatus === "valid" && promoDetails) {
-    if (promoDetails.percentOff) {
-      discount = subtotal * (promoDetails.percentOff / 100);
-    } else if (promoDetails.amountOff) {
-      discount = promoDetails.amountOff;
-    }
-  }
-
-  const total = subtotal - discount + tax + baseShipping;
-
-  // Validate promo code with Stripe
-  const validatePromoCode = async () => {
-    if (!promoCode.trim()) return;
-
-    setPromoStatus("validating");
-    try {
-      const response = await fetch("/api/stripe/validate-promo", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ code: promoCode }),
-      });
-
-      const data = await response.json();
-
-      if (data.valid) {
-        setPromoStatus("valid");
-        setPromoDetails(data.coupon);
-      } else {
-        setPromoStatus("invalid");
-        setPromoDetails(null);
-      }
-    } catch (err) {
-      setPromoStatus("invalid");
-      setPromoDetails(null);
-    }
-  };
+  const total = subtotal + tax + baseShipping;
 
   // Redirect to Stripe Checkout
   const handleCheckout = async () => {
@@ -104,7 +55,6 @@ export default function PaymentClient({ cartItems, userEmail }: PaymentClientPro
             quantity: item.quantity,
             price: item.price,
           })),
-          promoCode: promoStatus === "valid" ? promoCode : undefined,
         }),
       });
 
@@ -126,85 +76,17 @@ export default function PaymentClient({ cartItems, userEmail }: PaymentClientPro
   return (
     <div className="flex flex-col gap-8 sm:gap-10 max-w-5xl mx-auto">
       {/* Luxury Page Header */}
-      <div className="flex items-start gap-4">
-        <Link href="/user/cart">
-          <Button variant="ghost" size="icon" className="flex-shrink-0 hover:bg-muted">
-            <ArrowLeft className="w-4 h-4" />
-          </Button>
-        </Link>
-        <div className="luxury-page-header mb-0">
-          <span className="label">Secure Checkout</span>
-          <h1>Complete Your Order</h1>
-          <p>Review your items and proceed to secure payment</p>
-        </div>
+      <div className="luxury-page-header">
+        <span className="label">Secure Checkout</span>
+        <h1>Complete Your Order</h1>
+        <p>Review your items and proceed to secure payment</p>
       </div>
 
       <div className="gold-divider" />
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        {/* Left Column - Promo Code & Info */}
+        {/* Left Column - Payment Info */}
         <div className="space-y-6">
-          {/* Promo Code */}
-          <div className="luxury-card overflow-hidden">
-            <div className="px-6 py-5 border-b border-border/40 flex items-center gap-3">
-              <Gift className="w-4 h-4 text-muted-foreground" />
-              <h3 className="text-sm tracking-luxury uppercase text-muted-foreground">
-                Promotion Code
-              </h3>
-            </div>
-            <div className="p-6 space-y-4">
-              <div className="flex gap-2">
-                <Input
-                  placeholder="Enter promo code"
-                  value={promoCode}
-                  onChange={(e) => {
-                    setPromoCode(e.target.value.toUpperCase());
-                    if (promoStatus !== "idle") {
-                      setPromoStatus("idle");
-                      setPromoDetails(null);
-                    }
-                  }}
-                  disabled={promoStatus === "validating"}
-                  className="luxury-input text-sm"
-                />
-                <Button
-                  variant="outline"
-                  onClick={validatePromoCode}
-                  disabled={!promoCode.trim() || promoStatus === "validating"}
-                  className="text-xs tracking-luxury uppercase shrink-0"
-                >
-                  {promoStatus === "validating" ? (
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                  ) : (
-                    "Apply"
-                  )}
-                </Button>
-              </div>
-
-              {promoStatus === "valid" && promoDetails && (
-                <div className="flex items-center gap-2 text-emerald-600 dark:text-emerald-400 text-xs">
-                  <CheckCircle className="w-3.5 h-3.5" />
-                  <span className="font-light">
-                    {promoDetails.percentOff
-                      ? `${promoDetails.percentOff}% discount applied`
-                      : `RM ${promoDetails.amountOff} discount applied`
-                    }
-                  </span>
-                </div>
-              )}
-
-              {promoStatus === "invalid" && (
-                <div className="flex items-center gap-2 text-destructive text-xs">
-                  <AlertCircle className="w-3.5 h-3.5" />
-                  <span className="font-light">Invalid or expired promo code</span>
-                </div>
-              )}
-
-              <p className="text-xs text-muted-foreground/70 font-light">
-                Promo codes can also be applied at Stripe checkout
-              </p>
-            </div>
-          </div>
 
           {/* Payment Methods Info */}
           <div className="luxury-card overflow-hidden">
@@ -233,10 +115,12 @@ export default function PaymentClient({ cartItems, userEmail }: PaymentClientPro
                   <span className="text-[10px] text-muted-foreground font-light">Mastercard</span>
                 </div>
                 <div className="flex flex-col items-center p-4 border border-border/40 transition-colors hover:bg-muted/30">
-                  <div className="h-5 flex items-center justify-center mb-2">
-                    <span className="text-xs font-semibold text-emerald-600">FPX</span>
-                  </div>
-                  <span className="text-[10px] text-muted-foreground font-light">Online Banking</span>
+                  <img
+                    src="https://cdn.brandfetch.io/grab.com"
+                    alt="GrabPay"
+                    className="h-5 w-auto object-contain mb-2"
+                  />
+                  <span className="text-[10px] text-muted-foreground font-light">GrabPay</span>
                 </div>
               </div>
               <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground/70">
@@ -296,12 +180,6 @@ export default function PaymentClient({ cartItems, userEmail }: PaymentClientPro
                   <span className="text-muted-foreground font-light">Subtotal</span>
                   <span className="font-medium">RM {subtotal.toFixed(2)}</span>
                 </div>
-                {discount > 0 && (
-                  <div className="flex justify-between text-emerald-600 dark:text-emerald-400">
-                    <span className="font-light">Discount</span>
-                    <span className="font-medium">−RM {discount.toFixed(2)}</span>
-                  </div>
-                )}
                 <div className="flex justify-between">
                   <span className="text-muted-foreground font-light">Tax (8%)</span>
                   <span className="font-medium">RM {tax.toFixed(2)}</span>
