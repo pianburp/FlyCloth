@@ -4,13 +4,36 @@ import Stripe from 'stripe';
 // This should only be used in server-side code
 const stripeSecretKey = process.env.STRIPE_SECRET_KEY;
 
-if (!stripeSecretKey) {
-  console.warn('STRIPE_SECRET_KEY is not set - Stripe features will not work');
+/**
+ * Check if Stripe is properly configured
+ */
+export function isStripeEnabled(): boolean {
+  return !!stripeSecretKey && stripeSecretKey.startsWith('sk_');
 }
 
-export const stripe = new Stripe(stripeSecretKey || 'sk_test_placeholder', {
-  apiVersion: '2025-11-17' as Stripe.LatestApiVersion,
-  typescript: true,
+/**
+ * Get the Stripe client instance. Throws if Stripe is not configured.
+ */
+function getStripeClient(): Stripe {
+  if (!isStripeEnabled()) {
+    throw new Error('STRIPE_SECRET_KEY is not set or invalid. Please configure your Stripe secrets.');
+  }
+  return new Stripe(stripeSecretKey!, {
+    apiVersion: '2025-11-17' as Stripe.LatestApiVersion,
+    typescript: true,
+  });
+}
+
+// Lazy-loaded Stripe instance (only created when needed)
+let _stripeInstance: Stripe | null = null;
+
+export const stripe = new Proxy({} as Stripe, {
+  get(_, prop) {
+    if (!_stripeInstance) {
+      _stripeInstance = getStripeClient();
+    }
+    return (_stripeInstance as any)[prop];
+  }
 });
 
 // Get the publishable key for client-side usage

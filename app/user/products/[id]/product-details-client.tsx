@@ -41,8 +41,13 @@ interface ProductDetailsClientProps {
 const isVideo = (media: ProductImage) => media.media_type === 'video';
 
 export default function ProductDetailsClient({ product, variants, images }: ProductDetailsClientProps) {
-  const [selectedFit, setSelectedFit] = useState<string | null>(null);
-  const [selectedSize, setSelectedSize] = useState<string | null>(null);
+  // Combine state into one object for cleaner updates
+  const [state, setState] = useState({
+    fit: null as string | null,
+    size: null as string | null,
+    gsm: null as number | null,
+  });
+
   const [quantity, setQuantity] = useState(1);
   const [isAdding, setIsAdding] = useState(false);
   const [mainImage, setMainImage] = useState(images.find(img => img.is_primary)?.storage_path || images[0]?.storage_path);
@@ -50,21 +55,37 @@ export default function ProductDetailsClient({ product, variants, images }: Prod
   const supabase = useMemo(() => createClient(), []);
   const { toast } = useToast();
 
-  // Get unique fits and sizes
-  const fits = Array.from(new Set(variants.map(v => v.fit))).map(fit => {
-    const fitLabels: Record<string, string> = {
-      'slim': 'Slim Fit',
-      'regular': 'Regular Fit',
-      'oversize': 'Oversize Fit'
-    };
-    return { value: fit, label: fitLabels[fit] || fit };
-  });
+  // Get unique fits
+  const fits = useMemo(() => {
+    return Array.from(new Set(variants.map(v => v.fit))).map(fit => {
+      const fitLabels: Record<string, string> = {
+        'slim': 'Slim Fit',
+        'regular': 'Regular Fit',
+        'oversize': 'Oversize Fit'
+      };
+      return { value: fit, label: fitLabels[fit] || fit };
+    });
+  }, [variants]);
 
-  const sizes = Array.from(new Set(variants.map(v => v.size)));
+  // Get unique sizes
+  const sizes = useMemo(() => Array.from(new Set(variants.map(v => v.size))), [variants]);
+
+  // Get unique GSMs
+  const gsmOptions = useMemo(() =>
+    Array.from(new Set(variants.map(v => v.gsm).filter((g): g is number => !!g))).sort((a, b) => a - b),
+    [variants]
+  );
+
+  // Set initial GSM if only one exists or when variant selection changes
+  useMemo(() => {
+    if (gsmOptions.length === 1 && !state.gsm) {
+      setState(prev => ({ ...prev, gsm: gsmOptions[0] }));
+    }
+  }, [gsmOptions, state.gsm]);
 
   // Find selected variant
   const selectedVariant = variants.find(
-    v => v.fit === selectedFit && v.size === selectedSize
+    v => v.fit === state.fit && v.size === state.size && (!v.gsm || v.gsm === state.gsm)
   );
 
   const currentPrice = selectedVariant ? selectedVariant.price : product.base_price;
@@ -88,7 +109,7 @@ export default function ProductDetailsClient({ product, variants, images }: Prod
       } else {
         toast({
           title: "Added to cart",
-          description: `${quantity} x ${product.name} (${selectedSize}, ${fits.find(f => f.value === selectedFit)?.label}) added to your cart.`,
+          description: `${quantity} x ${product.name} (${state.size}, ${fits.find(f => f.value === state.fit)?.label}${selectedVariant.gsm ? `, ${selectedVariant.gsm}gsm` : ''}) added to your cart.`,
         });
       }
     } catch (error) {
@@ -187,14 +208,14 @@ export default function ProductDetailsClient({ product, variants, images }: Prod
           {/* Fit Selection */}
           <div>
             <h3 className="text-xs tracking-luxury uppercase text-muted-foreground mb-4">
-              Fit {selectedFit && <span className="text-foreground ml-2">— {fits.find(f => f.value === selectedFit)?.label}</span>}
+              Fit {state.fit && <span className="text-foreground ml-2">— {fits.find(f => f.value === state.fit)?.label}</span>}
             </h3>
             <div className="flex flex-wrap gap-2">
               {fits.map((fit) => (
                 <button
                   key={fit.value}
-                  onClick={() => setSelectedFit(fit.value)}
-                  className={`px-4 py-2 text-sm font-light border transition-all duration-300 ${selectedFit === fit.value
+                  onClick={() => setState(prev => ({ ...prev, fit: fit.value }))}
+                  className={`px-4 py-2 text-sm font-light border transition-all duration-300 ${state.fit === fit.value
                     ? 'bg-foreground text-background border-foreground'
                     : 'bg-transparent text-foreground border-border hover:border-foreground'
                     }`}
@@ -208,18 +229,23 @@ export default function ProductDetailsClient({ product, variants, images }: Prod
           {/* Size Selection */}
           <div>
             <h3 className="text-xs tracking-luxury uppercase text-muted-foreground mb-4">
-              Size {selectedSize && <span className="text-foreground ml-2">— {selectedSize}</span>}
+              Size {state.size && <span className="text-foreground ml-2">— {state.size}</span>}
             </h3>
             <div className="flex flex-wrap gap-2">
               {sizes.map((size) => {
-                const isAvailable = !selectedFit || variants.some(v => v.fit === selectedFit && v.size === size && v.stock_quantity > 0);
+                const isAvailable = !state.fit || variants.some(v =>
+                  v.fit === state.fit &&
+                  v.size === size &&
+                  (!state.gsm || v.gsm === state.gsm) &&
+                  v.stock_quantity > 0
+                );
 
                 return (
                   <button
                     key={size}
-                    onClick={() => setSelectedSize(size)}
+                    onClick={() => setState(prev => ({ ...prev, size }))}
                     disabled={!isAvailable}
-                    className={`w-12 h-12 text-sm font-light border transition-all duration-300 ${selectedSize === size
+                    className={`w-12 h-12 text-sm font-light border transition-all duration-300 ${state.size === size
                       ? 'bg-foreground text-background border-foreground'
                       : 'bg-transparent text-foreground border-border hover:border-foreground'
                       } ${!isAvailable ? 'opacity-30 cursor-not-allowed line-through' : ''}`}
@@ -231,16 +257,49 @@ export default function ProductDetailsClient({ product, variants, images }: Prod
             </div>
           </div>
 
-          {/* GSM Info */}
-          {selectedVariant?.gsm && (
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <span className="text-xs tracking-luxury uppercase">Fabric Weight:</span>
-              <span className="font-medium text-foreground">{selectedVariant.gsm} GSM</span>
-              <span className="text-xs">
-                {selectedVariant.gsm <= 150 ? '(Lightweight)' : selectedVariant.gsm <= 180 ? '(Standard)' : '(Heavyweight)'}
-              </span>
-            </div>
-          )}
+          {/* GSM Info & Selection */}
+          <div className="space-y-4">
+            <h3 className="text-xs tracking-luxury uppercase text-muted-foreground">
+              Fabric Weight
+            </h3>
+
+            {/* GSM Selection Buttons if multiple weights exist */}
+            {gsmOptions.length > 1 && (
+              <div className="flex flex-wrap gap-2 mb-2">
+                {gsmOptions.map((gsm) => {
+                  const isAvailable = variants.some(v =>
+                    state.fit && v.fit === state.fit &&
+                    state.size && v.size === state.size &&
+                    v.gsm === gsm &&
+                    v.stock_quantity > 0
+                  );
+
+                  return (
+                    <button
+                      key={gsm}
+                      onClick={() => setState(prev => ({ ...prev, gsm }))}
+                      className={`px-3 py-1.5 text-xs font-light border transition-all duration-300 ${state.gsm === gsm
+                        ? 'bg-foreground text-background border-foreground'
+                        : 'bg-transparent text-foreground border-border hover:border-foreground'
+                        } ${!isAvailable ? 'opacity-50' : ''}`}
+                    >
+                      {gsm} GSM
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+
+            {/* GSM Details Display */}
+            {state.gsm && (
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <span className="font-medium text-foreground">{state.gsm} GSM</span>
+                <span className="text-xs">
+                  {state.gsm <= 150 ? '(Lightweight)' : state.gsm <= 180 ? '(Standard)' : '(Heavyweight)'}
+                </span>
+              </div>
+            )}
+          </div>
 
           {/* Quantity */}
           <div>
@@ -287,9 +346,9 @@ export default function ProductDetailsClient({ product, variants, images }: Prod
               )}
             </Button>
 
-            {!selectedFit || !selectedSize ? (
+            {(!state.fit || !state.size || (gsmOptions.length > 0 && !state.gsm)) ? (
               <p className="text-xs text-muted-foreground text-center font-light">
-                Please select a fit and size to continue
+                Please select fit, size{gsmOptions.length > 0 ? ', and fabric weight' : ''} to continue
               </p>
             ) : null}
           </div>

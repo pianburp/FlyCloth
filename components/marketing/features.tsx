@@ -5,74 +5,71 @@ import { motion, useScroll, useTransform } from "framer-motion";
 import Image from "next/image";
 import Link from "next/link";
 import { ArrowUpRight } from "lucide-react";
+import { createClient } from "@/lib/supabase/client";
 
-const COLLECTIONS = [
-  {
-    id: 1,
-    title: "The Noir Collection",
-    subtitle: "Winter 2025",
-    description: "Explore the depths of sophistication with our signature black pieces.",
-    image: "https://images.unsplash.com/photo-1509631179647-0177331693ae?w=800&q=80",
-    price: "From RM 2,450",
-    href: "/collections/noir"
-  },
-  {
-    id: 2,
-    title: "Ivory Dreams",
-    subtitle: "Bridal Couture",
-    description: "Ethereal elegance for your most precious moments.",
-    image: "https://images.unsplash.com/photo-1594938298603-c8148c4dae35?w=800&q=80",
-    price: "From RM 8,900",
-    href: "/collections/bridal"
-  },
-  {
-    id: 3,
-    title: "Evening Soirée",
-    subtitle: "Gala Collection",
-    description: "Statement pieces designed to captivate and command attention.",
-    image: "https://images.unsplash.com/photo-1518577915332-c2a19f149a75?w=800&q=80",
-    price: "From RM 4,200",
-    href: "/collections/evening"
-  },
-];
+export interface PromotedProduct {
+  id: string;
+  name: string;
+  description: string;
+  base_price: number;
+  product_images: { storage_path: string; is_primary: boolean }[];
+}
 
 const CATEGORIES = [
   {
-    name: "Ready-to-Wear",
-    image: "https://images.unsplash.com/photo-1483985988355-763728e1935b?w=600&q=80",
-    count: "48 pieces",
-    href: "/shop/ready-to-wear"
+    name: "Slim Fit Collection",
+    image: "https://images.unsplash.com/photo-1594938328870-9623159c8c99?w=600&q=80",
+    count: "Tailored Silhouette",
+    href: "/user/products"
   },
   {
-    name: "Haute Couture",
-    image: "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=600&q=80",
-    count: "24 pieces",
-    href: "/shop/haute-couture"
+    name: "Regular Fit Classics",
+    image: "https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=600&q=80",
+    count: "Everyday Comfort",
+    href: "/user/products"
   },
   {
-    name: "Accessories",
-    image: "https://images.unsplash.com/photo-1606760227091-3dd870d97f1d?w=600&q=80",
-    count: "36 pieces",
-    href: "/shop/accessories"
+    name: "Oversized Streetwear",
+    image: "https://images.unsplash.com/photo-1503341504253-dff4815485f1?w=600&q=80",
+    count: "Modern Aesthetic",
+    href: "/user/products"
   },
   {
-    name: "Limited Edition",
-    image: "https://images.unsplash.com/photo-1445205170230-053b83016050?w=600&q=80",
-    count: "12 pieces",
-    href: "/shop/limited"
+    name: "Premium Heavyweight",
+    image: "https://images.unsplash.com/photo-1489987707025-afc232f7ea0f?w=600&q=80",
+    count: "Luxury GSM",
+    href: "/user/products"
   },
 ];
 
-export function Features() {
+interface FeaturesProps {
+  promotedProducts?: any[]; // Using any[] to avoid strict type coupling temporarily
+}
+
+export function Features({ promotedProducts = [] }: FeaturesProps) {
   const containerRef = useRef(null);
+  const supabase = createClient();
+
   const { scrollYProgress } = useScroll({
     target: containerRef,
     offset: ["start end", "end start"]
   });
 
+  const getImageUrl = (product: any) => {
+    const images = product.product_images || [];
+    const primaryImage = images.find((img: any) => img.is_primary) || images[0];
+    if (primaryImage) {
+      return supabase.storage.from('product-images').getPublicUrl(primaryImage.storage_path).data.publicUrl;
+    }
+    return "https://images.unsplash.com/photo-1509631179647-0177331693ae?w=800&q=80"; // Fallback
+  };
+
   const y1 = useTransform(scrollYProgress, [0, 1], [100, -100]);
   const y2 = useTransform(scrollYProgress, [0, 1], [50, -150]);
   const opacity = useTransform(scrollYProgress, [0, 0.2, 0.8, 1], [0, 1, 1, 0]);
+
+  // Use promoted products if available, otherwise fallback (or show empty state)
+  const displayItems = promotedProducts.length > 0 ? promotedProducts : [];
 
   return (
     <section ref={containerRef} className="relative w-full py-32 bg-background overflow-hidden" id="features">
@@ -87,70 +84,76 @@ export function Features() {
         >
           <div className="max-w-2xl">
             <p className="text-xs tracking-luxury uppercase text-muted-foreground mb-4">
-              Featured Collections
+              Latest Additions
             </p>
             <h2 className="text-4xl md:text-5xl lg:text-6xl font-light tracking-tight leading-tight">
-              Curated for the
-              <span className="block italic font-medium">Discerning Eye</span>
+              Fresh from the
+              <span className="block italic font-medium">Atelier</span>
             </h2>
           </div>
           <Link
-            href="/collections"
+            href="/user/products"
             className="group flex items-center gap-2 text-sm tracking-luxury uppercase text-muted-foreground hover:text-foreground transition-colors duration-300"
           >
-            View All Collections
+            View All Products
             <ArrowUpRight className="w-4 h-4 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform duration-300" />
           </Link>
         </motion.div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8">
-          {COLLECTIONS.map((collection, idx) => (
-            <motion.div
-              key={collection.id}
-              initial={{ opacity: 0, y: 60 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.8, delay: idx * 0.15 }}
-            >
-              <Link href={collection.href} className="group block">
-                <div className="relative aspect-[3/4] overflow-hidden bg-muted mb-6">
-                  <Image
-                    src={collection.image}
-                    alt={collection.title}
-                    fill
-                    sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 33vw"
-                    className="object-cover transition-transform duration-700 group-hover:scale-105"
-                    priority={idx === 0}
-                  />
-                  {/* Overlay on hover */}
-                  <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors duration-500" />
+        {displayItems.length > 0 ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8">
+            {displayItems.map((product, idx) => (
+              <motion.div
+                key={product.id}
+                initial={{ opacity: 0, y: 60 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.8, delay: idx * 0.15 }}
+              >
+                <Link href={`/user/products/${product.id}`} className="group block">
+                  <div className="relative aspect-[3/4] overflow-hidden bg-muted mb-6">
+                    <Image
+                      src={getImageUrl(product)}
+                      alt={product.name}
+                      fill
+                      sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                      className="object-cover transition-transform duration-700 group-hover:scale-105"
+                      priority={idx === 0}
+                    />
+                    {/* Overlay on hover */}
+                    <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors duration-500" />
 
-                  {/* Quick View */}
-                  <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-500">
-                    <span className="bg-white text-black px-6 py-3 text-xs tracking-luxury uppercase transform translate-y-4 group-hover:translate-y-0 transition-transform duration-500">
-                      Discover
-                    </span>
+                    {/* Quick View */}
+                    <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-500">
+                      <span className="bg-white text-black px-6 py-3 text-xs tracking-luxury uppercase transform translate-y-4 group-hover:translate-y-0 transition-transform duration-500">
+                        View Product
+                      </span>
+                    </div>
                   </div>
-                </div>
 
-                <div className="space-y-2">
-                  <p className="text-xs tracking-luxury uppercase text-muted-foreground">
-                    {collection.subtitle}
-                  </p>
-                  <h3 className="text-xl font-light tracking-tight group-hover:text-muted-foreground transition-colors duration-300">
-                    {collection.title}
-                  </h3>
-                  <p className="text-sm text-muted-foreground font-light leading-relaxed">
-                    {collection.description}
-                  </p>
-                  <p className="text-sm font-medium pt-2">
-                    {collection.price}
-                  </p>
-                </div>
-              </Link>
-            </motion.div>
-          ))}
-        </div>
+                  <div className="space-y-2">
+                    <p className="text-xs tracking-luxury uppercase text-muted-foreground">
+                      New Arrival
+                    </p>
+                    <h3 className="text-xl font-light tracking-tight group-hover:text-muted-foreground transition-colors duration-300">
+                      {product.name}
+                    </h3>
+                    <p className="text-sm text-muted-foreground font-light leading-relaxed line-clamp-2">
+                      {product.description}
+                    </p>
+                    <p className="text-sm font-medium pt-2">
+                      RM {product.base_price.toLocaleString()}
+                    </p>
+                  </div>
+                </Link>
+              </motion.div>
+            ))}
+          </div>
+        ) : (
+          <div className="text-center py-20 bg-muted/30 rounded-lg">
+            <p className="text-muted-foreground font-light">New collections arriving soon.</p>
+          </div>
+        )}
       </div>
 
       {/* Categories Section */}

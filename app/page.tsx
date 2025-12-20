@@ -9,15 +9,36 @@ import { RootLayoutWrapper } from "@/components/layout/root-layout-wrapper";
 import { getCachedUserProfile } from "@/lib/rbac";
 import { AuthProvider, AuthUser } from "@/lib/auth-context";
 
+import { createClient } from "@/lib/supabase/server";
+
 export default async function Home() {
   const profile = await getCachedUserProfile();
+  const supabase = await createClient();
+
+  // Fetch latest 3 products for the Features section
+  const { data: promotedProducts } = await supabase
+    .from('products')
+    .select(`
+      id,
+      name,
+      description,
+      base_price,
+      product_images (
+        storage_path,
+        is_primary
+      )
+    `)
+    .eq('is_active', true) // Ensure we only show active products
+    .eq('featured', true)
+    .order('created_at', { ascending: false })
+    .limit(3);
 
   if (profile) {
     return (
       <RootLayoutWrapper>
         <Hero />
         <div className="flex flex-col">
-          <Features />
+          <Features promotedProducts={promotedProducts || []} />
           <ContactUs />
         </div>
       </RootLayoutWrapper>
@@ -58,7 +79,7 @@ export default async function Home() {
             <Hero />
 
             {/* Features/Collections Section */}
-            <Features />
+            <Features promotedProducts={promotedProducts || []} />
 
             {/*Contact Section */}
             <ContactUs />

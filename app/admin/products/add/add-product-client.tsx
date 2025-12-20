@@ -9,6 +9,7 @@ import { Upload, Save, X, Loader2, Play } from "lucide-react";
 import Link from "next/link";
 import { useState, useCallback, useMemo } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { useToast } from "@/components/ui/use-toast";
 
 const SIZES = ['XS', 'S', 'M', 'L', 'XL', 'XXL'];
 
@@ -30,6 +31,7 @@ const isVideoFile = (file: File) => file.type.startsWith('video/');
 export default function AddProductClient() {
   const router = useRouter();
   const supabase = useMemo(() => createClient(), []);
+  const { toast } = useToast();
   const [loading, setLoading] = useState(false);
 
   // Form State
@@ -39,6 +41,8 @@ export default function AddProductClient() {
     price: "",
     stock: "",
     description: "",
+    is_active: true,
+    featured: false
   });
 
   const [selectedSizes, setSelectedSizes] = useState<string[]>([]);
@@ -132,8 +136,8 @@ export default function AddProductClient() {
           description: formData.description,
           sku: formData.sku,
           base_price: parseFloat(formData.price),
-          is_active: true,
-          featured: false
+          is_active: formData.is_active,
+          featured: formData.featured
         })
         .select()
         .single();
@@ -220,19 +224,39 @@ export default function AddProductClient() {
           body: JSON.stringify({ productId: product.id }),
         });
 
-        if (!syncResponse.ok) {
-          console.warn('Failed to sync product to Stripe, but product was created successfully');
+        const syncResult = await syncResponse.json();
+
+        if (syncResponse.ok && syncResult.success) {
+          toast({
+            title: "Product Created",
+            description: `Product synced to Stripe successfully.`,
+          });
+        } else {
+          console.warn('Stripe sync failed:', syncResult.error);
+          toast({
+            variant: "destructive",
+            title: "Product Created (Stripe sync failed)",
+            description: syncResult.error || "Failed to sync to Stripe. You can try syncing manually later.",
+          });
         }
-      } catch (syncError) {
+      } catch (syncError: any) {
         console.warn('Failed to sync to Stripe:', syncError);
-        // Don't throw - product was created successfully, just not synced
+        toast({
+          variant: "destructive",
+          title: "Product Created (Stripe sync failed)",
+          description: syncError.message || "Failed to sync to Stripe. You can try syncing manually later.",
+        });
       }
 
       router.push('/admin/products');
       router.refresh();
     } catch (error: any) {
       console.error('Error saving product:', error);
-      alert(`Error saving product: ${error.message}`);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: `Error saving product: ${error.message}`,
+      });
     } finally {
       setLoading(false);
     }
@@ -316,6 +340,36 @@ export default function AddProductClient() {
               />
             </div>
 
+            <div className="flex items-center gap-8">
+              <div className="flex items-center space-x-2">
+                <Label>Active Status</Label>
+                <div className="flex items-center gap-2">
+                  <span className={`text-sm ${formData.is_active ? 'text-green-600' : 'text-muted-foreground'}`}>
+                    {formData.is_active ? 'Active' : 'Draft'}
+                  </span>
+                  <Button
+                    variant="outline" size="sm"
+                    onClick={() => setFormData(prev => ({ ...prev, is_active: !prev.is_active }))}
+                    className={formData.is_active ? "border-green-500 bg-green-50" : ""}
+                  >
+                    {formData.is_active ? 'Deactivate' : 'Activate'}
+                  </Button>
+                </div>
+              </div>
+
+              <div className="flex items-center space-x-2">
+                <Label>Featured</Label>
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="outline" size="sm"
+                    onClick={() => setFormData(prev => ({ ...prev, featured: !prev.featured }))}
+                    className={formData.featured ? "border-yellow-500 bg-yellow-50" : ""}
+                  >
+                    {formData.featured ? 'Featured' : 'Standard'}
+                  </Button>
+                </div>
+              </div>
+            </div>
 
           </CardContent>
         </Card>
