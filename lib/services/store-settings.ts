@@ -6,6 +6,15 @@ export interface StoreSettings {
   shipping_fee: number;
   free_shipping_threshold: number;
   tax_rate: number;
+  // EasyParcel pickup address
+  pickup_name?: string | null;
+  pickup_company?: string | null;
+  pickup_contact?: string | null;
+  pickup_addr1?: string | null;
+  pickup_addr2?: string | null;
+  pickup_city?: string | null;
+  pickup_state?: string | null;
+  pickup_postcode?: string | null;
 }
 
 // Default settings (used as fallback)
@@ -62,7 +71,7 @@ export async function getStoreSettingsUncached(): Promise<StoreSettings> {
 
   const { data, error } = await supabase
     .from("store_settings")
-    .select("shipping_fee, free_shipping_threshold, tax_rate")
+    .select("*")
     .eq("id", "default")
     .single();
 
@@ -75,5 +84,13 @@ export async function getStoreSettingsUncached(): Promise<StoreSettings> {
     shipping_fee: Number(data.shipping_fee),
     free_shipping_threshold: Number(data.free_shipping_threshold),
     tax_rate: Number(data.tax_rate),
+    pickup_name: data.pickup_name,
+    pickup_company: data.pickup_company,
+    pickup_contact: data.pickup_contact,
+    pickup_addr1: data.pickup_addr1,
+    pickup_addr2: data.pickup_addr2,
+    pickup_city: data.pickup_city,
+    pickup_state: data.pickup_state,
+    pickup_postcode: data.pickup_postcode,
   };
 }

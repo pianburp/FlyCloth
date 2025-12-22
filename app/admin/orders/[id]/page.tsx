@@ -35,9 +35,17 @@ export default async function OrderDetailsPage({ params }: { params: Promise<{ i
     .eq('id', order.user_id)
     .single();
 
+  // Fetch shipment if exists
+  const { data: shipment } = await supabase
+    .from('easyparcel_shipments')
+    .select('*')
+    .eq('order_id', id)
+    .single();
+
   const orderWithProfile = {
     ...order,
-    user_profile: profile
+    user_profile: profile,
+    shipment: shipment || null,
   };
 
   return <OrderDetailsClient order={orderWithProfile} />;

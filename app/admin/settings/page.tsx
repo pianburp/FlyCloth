@@ -5,8 +5,9 @@ import { Badge } from "@/components/ui/badge";
 import { AdminSettingsForm } from "./admin-settings-form";
 import { AdminChangePasswordForm } from "./admin-change-password-form";
 import { StoreSettingsForm } from "./store-settings-form";
+import { PickupAddressForm } from "./pickup-address-form";
 import { getStoreSettingsUncached } from "@/lib/services/store-settings";
-import { Shield, User, Lock, Info, Store } from "lucide-react";
+import { Shield, User, Lock, Info, Store, Truck } from "lucide-react";
 
 export const dynamic = 'force-dynamic';
 
@@ -76,7 +77,7 @@ export default async function SettingsPage() {
         </Card>
 
         {/* Store Settings Card */}
-        <Card className="lg:col-span-2">
+        <Card>
           <CardHeader>
             <div className="flex items-center gap-2">
               <Store className="w-5 h-5 text-primary" />
@@ -96,8 +97,34 @@ export default async function SettingsPage() {
             />
           </CardContent>
         </Card>
+
+        {/* EasyParcel Pickup Address Card */}
+        <Card>
+          <CardHeader>
+            <div className="flex items-center gap-2">
+              <Truck className="w-5 h-5 text-primary" />
+              <CardTitle>EasyParcel Pickup Address</CardTitle>
+            </div>
+            <CardDescription>
+              Configure the pickup address for EasyParcel shipments
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <PickupAddressForm
+              initialData={{
+                pickupName: storeSettings.pickup_name || null,
+                pickupCompany: storeSettings.pickup_company || null,
+                pickupContact: storeSettings.pickup_contact || null,
+                pickupAddr1: storeSettings.pickup_addr1 || null,
+                pickupAddr2: storeSettings.pickup_addr2 || null,
+                pickupCity: storeSettings.pickup_city || null,
+                pickupState: storeSettings.pickup_state || null,
+                pickupPostcode: storeSettings.pickup_postcode || null,
+              }}
+            />
+          </CardContent>
+        </Card>
       </div>
     </div>
   );
 }
-

@@ -1,11 +1,13 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { trpc } from "@/lib/trpc/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/components/ui/use-toast";
+import { Truck, Package, ExternalLink, Loader2, CreditCard, Printer } from "lucide-react";
 
 interface OrderItem {
   id: string;
@@ -13,6 +15,20 @@ interface OrderItem {
   variant_info: string;
   quantity: number;
   unit_price: number;
+}
+
+interface Shipment {
+  id: string;
+  easyparcel_order_no: string;
+  parcel_no: string | null;
+  awb: string | null;
+  awb_label_url: string | null;
+  tracking_url: string | null;
+  courier_name: string;
+  shipping_cost: number;
+  payment_status: 'pending' | 'paid' | 'failed';
+  collect_date: string | null;
+  paid_at: string | null;
 }
 
 interface Order {
@@ -29,24 +45,41 @@ interface Order {
     phone: string | null;
     address: string | null;
   };
+  shipment?: Shipment | null;
 }
+
+const ORDER_STATUSES = [
+  'pending',
+  'paid',
+  'printing',
+  'awaiting_shipment',
+  'shipped',
+  'delivered',
+  'cancelled'
+] as const;
+
+type OrderStatus = typeof ORDER_STATUSES[number];
 
 export default function OrderDetailsClient({ order }: { order: Order }) {
   const [status, setStatus] = useState(order.status);
+  const [shipment, setShipment] = useState<Shipment | null>(order.shipment || null);
   const [isUpdating, setIsUpdating] = useState(false);
+  const [isCreatingShipment, setIsCreatingShipment] = useState(false);
+  const [isPayingShipment, setIsPayingShipment] = useState(false);
   const { toast } = useToast();
+  const router = useRouter();
 
   const handleStatusChange = async (newStatus: string) => {
     setIsUpdating(true);
     try {
       await trpc.orders.updateStatus.mutate({
         orderId: order.id,
-        newStatus: newStatus as "pending" | "processing" | "shipped" | "delivered" | "cancelled",
+        newStatus: newStatus as any,
       });
       setStatus(newStatus);
       toast({
         title: "Status Updated",
-        description: `Order status changed to ${newStatus}`,
+        description: `Order status changed to ${formatStatus(newStatus)}`,
       });
     } catch (error) {
       console.error(error);
@@ -60,15 +93,90 @@ export default function OrderDetailsClient({ order }: { order: Order }) {
     }
   };
 
+  const handleCreateShipment = async () => {
+    setIsCreatingShipment(true);
+    try {
+      const response = await fetch('/api/admin/shipments/create', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ orderId: order.id }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to create shipment');
+      }
+
+      toast({
+        title: "Shipment Created",
+        description: `EasyParcel order ${data.shipment.orderNo} created. Cost: RM${data.shipment.price}`,
+      });
+
+      // Refresh page to get updated shipment data
+      router.refresh();
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to create shipment",
+        variant: "destructive",
+      });
+    } finally {
+      setIsCreatingShipment(false);
+    }
+  };
+
+  const handlePayShipment = async () => {
+    setIsPayingShipment(true);
+    try {
+      const response = await fetch('/api/admin/shipments/pay', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ orderId: order.id }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to pay shipment');
+      }
+
+      toast({
+        title: "Shipment Paid & Confirmed",
+        description: `Tracking: ${data.shipment.awb}. Order marked as shipped.`,
+      });
+
+      // Refresh page to get updated data
+      router.refresh();
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to pay shipment",
+        variant: "destructive",
+      });
+    } finally {
+      setIsPayingShipment(false);
+    }
+  };
+
   const getStatusColor = (status: string) => {
     switch (status) {
       case "delivered": return "default";
-      case "shipped": return "secondary";
-      case "processing": return "outline";
+      case "shipped": return "default";
+      case "awaiting_shipment": return "secondary";
+      case "printing": return "secondary";
+      case "paid": return "outline";
       case "cancelled": return "destructive";
-      default: return "secondary"; // pending
+      default: return "secondary";
     }
   };
+
+  const formatStatus = (status: string) => {
+    return status.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+  };
+
+  const canCreateShipment = ['paid', 'printing'].includes(status) && !shipment;
+  const canPayShipment = shipment && shipment.payment_status === 'pending';
 
   return (
     <div className="flex flex-col gap-6 sm:gap-8">
@@ -119,11 +227,127 @@ export default function OrderDetailsClient({ order }: { order: Order }) {
                 <p className="text-muted-foreground">
                   {typeof order.shipping_address === 'string'
                     ? order.shipping_address
-                    : (order.shipping_address?.address || "No address provided")}
+                    : (order.shipping_address?.line1
+                      ? `${order.shipping_address.name || ''}\n${order.shipping_address.line1}${order.shipping_address.line2 ? ', ' + order.shipping_address.line2 : ''}\n${order.shipping_address.city}, ${order.shipping_address.state} ${order.shipping_address.postal_code}`
+                      : order.shipping_address?.address || order.user_profile?.address || "No address provided")}
                 </p>
                 <p className="font-medium mt-4">Payment Method:</p>
                 <p className="text-muted-foreground capitalize">{order.payment_method || "N/A"}</p>
               </div>
+            </CardContent>
+          </Card>
+
+          {/* Shipment Management Card */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Truck className="w-5 h-5" />
+                Shipment
+              </CardTitle>
+              <CardDescription>
+                {shipment ? 'Manage EasyParcel shipment' : 'Create shipment when ready to ship'}
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {!shipment ? (
+                <div className="text-center py-4">
+                  {canCreateShipment ? (
+                    <>
+                      <p className="text-muted-foreground mb-4">
+                        Ready to create shipment? Make sure the order is printed and QC passed.
+                      </p>
+                      <Button
+                        onClick={handleCreateShipment}
+                        disabled={isCreatingShipment}
+                        className="gap-2"
+                      >
+                        {isCreatingShipment ? (
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                        ) : (
+                          <Package className="w-4 h-4" />
+                        )}
+                        Create Shipment
+                      </Button>
+                    </>
+                  ) : (
+                    <p className="text-muted-foreground">
+                      {status === 'pending'
+                        ? 'Order payment not confirmed yet'
+                        : shipment
+                          ? 'Shipment already created'
+                          : 'Update status to Paid or Printing to create shipment'}
+                    </p>
+                  )}
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {/* Shipment Details */}
+                  <div className="grid grid-cols-2 gap-4 text-sm">
+                    <div>
+                      <p className="text-muted-foreground">EasyParcel Order</p>
+                      <p className="font-medium">{shipment.easyparcel_order_no}</p>
+                    </div>
+                    <div>
+                      <p className="text-muted-foreground">Courier</p>
+                      <p className="font-medium">{shipment.courier_name}</p>
+                    </div>
+                    <div>
+                      <p className="text-muted-foreground">Shipping Cost</p>
+                      <p className="font-medium">RM{shipment.shipping_cost.toFixed(2)}</p>
+                    </div>
+                    <div>
+                      <p className="text-muted-foreground">Payment Status</p>
+                      <Badge variant={shipment.payment_status === 'paid' ? 'default' : shipment.payment_status === 'failed' ? 'destructive' : 'secondary'}>
+                        {shipment.payment_status.charAt(0).toUpperCase() + shipment.payment_status.slice(1)}
+                      </Badge>
+                    </div>
+                    {shipment.awb && (
+                      <>
+                        <div className="col-span-2">
+                          <p className="text-muted-foreground">Tracking Number (AWB)</p>
+                          <p className="font-medium font-mono">{shipment.awb}</p>
+                        </div>
+                      </>
+                    )}
+                  </div>
+
+                  {/* Actions */}
+                  <div className="flex flex-wrap gap-2 pt-4 border-t">
+                    {canPayShipment && (
+                      <Button
+                        onClick={handlePayShipment}
+                        disabled={isPayingShipment}
+                        className="gap-2"
+                      >
+                        {isPayingShipment ? (
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                        ) : (
+                          <CreditCard className="w-4 h-4" />
+                        )}
+                        Pay & Confirm Shipment
+                      </Button>
+                    )}
+
+                    {shipment.awb_label_url && (
+                      <Button variant="outline" asChild className="gap-2">
+                        <a href={shipment.awb_label_url} target="_blank" rel="noopener noreferrer">
+                          <Printer className="w-4 h-4" />
+                          Print AWB Label
+                        </a>
+                      </Button>
+                    )}
+
+                    {shipment.tracking_url && (
+                      <Button variant="outline" asChild className="gap-2">
+                        <a href={shipment.tracking_url} target="_blank" rel="noopener noreferrer">
+                          <ExternalLink className="w-4 h-4" />
+                          Track Shipment
+                        </a>
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              )}
             </CardContent>
           </Card>
         </div>
@@ -139,7 +363,7 @@ export default function OrderDetailsClient({ order }: { order: Order }) {
               <div className="flex justify-between items-center">
                 <span className="text-sm font-medium">Current Status:</span>
                 <Badge variant={getStatusColor(status) as any}>
-                  {status.charAt(0).toUpperCase() + status.slice(1)}
+                  {formatStatus(status)}
                 </Badge>
               </div>
 
@@ -151,11 +375,9 @@ export default function OrderDetailsClient({ order }: { order: Order }) {
                   disabled={isUpdating}
                   className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                 >
-                  <option value="pending">Pending</option>
-                  <option value="processing">Processing</option>
-                  <option value="shipped">Shipped</option>
-                  <option value="delivered">Delivered</option>
-                  <option value="cancelled">Cancelled</option>
+                  {ORDER_STATUSES.map(s => (
+                    <option key={s} value={s}>{formatStatus(s)}</option>
+                  ))}
                 </select>
               </div>
             </CardContent>

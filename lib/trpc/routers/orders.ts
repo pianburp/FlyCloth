@@ -11,7 +11,7 @@ export const ordersRouter = router({
     .input(
       z.object({
         orderId: z.string().uuid(),
-        newStatus: z.enum(["pending", "processing", "shipped", "delivered", "cancelled"]),
+        newStatus: z.enum(["pending", "paid", "printing", "awaiting_shipment", "shipped", "delivered", "cancelled"]),
       })
     )
     .mutation(async ({ ctx, input }) => {

@@ -1,7 +1,7 @@
 import { getCachedUserProfile } from "@/lib/rbac";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { PackageIcon, Calendar, ArrowUpRight, Star } from "lucide-react";
+import { PackageIcon, Calendar, ArrowUpRight, Star, Truck, ExternalLink } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { ReviewDialog } from "./review-dialog";
@@ -14,13 +14,26 @@ function getStatusStyle(status: string) {
       return 'luxury-badge luxury-badge-success';
     case 'shipped':
       return 'luxury-badge luxury-badge-info';
+    case 'awaiting_shipment':
+    case 'printing':
     case 'processing':
       return 'luxury-badge luxury-badge-warning';
+    case 'paid':
+      return 'luxury-badge bg-blue-500/10 text-blue-600 border border-blue-500/20';
     case 'cancelled':
       return 'luxury-badge bg-destructive/10 text-destructive border border-destructive/20';
     default:
       return 'luxury-badge bg-muted text-muted-foreground border border-border';
   }
+}
+
+function formatStatus(status: string) {
+  const statusMap: Record<string, string> = {
+    'awaiting_shipment': 'Awaiting Shipment',
+    'paid': 'Paid',
+    'printing': 'Printing',
+  };
+  return statusMap[status] || status.charAt(0).toUpperCase() + status.slice(1);
 }
 
 export default async function OrdersPage() {
@@ -32,12 +45,13 @@ export default async function OrdersPage() {
 
   const supabase = await createClient();
 
-  // Fetch orders with items
+  // Fetch orders with items and shipments
   const { data: orders, error } = await supabase
     .from('orders')
     .select(`
       *,
-      order_items (*)
+      order_items (*),
+      easyparcel_shipments (*)
     `)
     .eq('user_id', profile.id)
     .order('created_at', { ascending: false });
@@ -104,7 +118,7 @@ export default async function OrdersPage() {
                       Order #{order.id.slice(0, 8).toUpperCase()}
                     </h3>
                     <span className={getStatusStyle(order.status)}>
-                      {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
+                      {formatStatus(order.status)}
                     </span>
                   </div>
                   <p className="text-xs text-muted-foreground font-light flex items-center gap-1.5">
@@ -170,6 +184,34 @@ export default async function OrdersPage() {
                   );
                 })}
               </div>
+
+              {/* Tracking Info for Shipped Orders */}
+              {order.easyparcel_shipments?.[0]?.awb && (
+                <div className="px-6 py-4 border-t border-border/40 bg-emerald-500/5">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div className="flex items-center gap-2">
+                      <Truck className="w-4 h-4 text-emerald-600" />
+                      <div>
+                        <p className="text-sm font-medium">Tracking: {order.easyparcel_shipments[0].awb}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {order.easyparcel_shipments[0].courier_name}
+                        </p>
+                      </div>
+                    </div>
+                    {order.easyparcel_shipments[0].tracking_url && (
+                      <a
+                        href={order.easyparcel_shipments[0].tracking_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1.5 text-xs font-medium text-primary hover:underline"
+                      >
+                        Track Order
+                        <ExternalLink className="w-3 h-3" />
+                      </a>
+                    )}
+                  </div>
+                </div>
+              )}
 
               {/* Order Total */}
               <div className="px-6 py-4 bg-muted/30 flex justify-between items-center">

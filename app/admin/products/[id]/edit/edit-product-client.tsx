@@ -329,7 +329,7 @@ export default function EditProductClient({ product: initialProduct, images: ini
                         </div>
 
                         <div className="space-y-2">
-                            <Label htmlFor="price">Base Price ($)</Label>
+                            <Label htmlFor="price">Base Price (RM)</Label>
                             <Input
                                 id="price"
                                 type="number"
