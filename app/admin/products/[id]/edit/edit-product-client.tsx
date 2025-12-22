@@ -5,6 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 import { Save, X, Loader2, Upload } from "lucide-react";
 import Link from "next/link";
 import { useState, useMemo } from "react";
@@ -149,29 +150,36 @@ export default function EditProductClient({ product: initialProduct, images: ini
     }
 
     const handleSaveAll = async () => {
+        console.log('[EDIT] handleSaveAll started');
         setLoading(true);
 
         try {
-            // Ensure browser Supabase client has a valid session
-            const { data: { session } } = await supabase.auth.getSession();
-            if (!session) {
-                throw new Error('Session expired. Please log in again.');
-            }
+            console.log('[EDIT] Starting product update...');
 
-            // 1. Update Product Details
-            const { error: productError } = await supabase
-                .from('products')
-                .update({
+            // 1. Update Product Details via API route (uses server-side Supabase client)
+            console.log('[EDIT] Calling API to update product...', { id: initialProduct.id });
+            const updateResponse = await fetch('/api/admin/products', {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    id: initialProduct.id,
                     name: productData.name,
                     description: productData.description,
                     sku: productData.sku,
                     base_price: Number(productData.price),
                     is_active: productData.is_active,
                     featured: productData.featured
-                })
-                .eq('id', initialProduct.id);
+                }),
+            });
 
-            if (productError) throw productError;
+            console.log('[EDIT] API response status:', updateResponse.status);
+            const updateResult = await updateResponse.json();
+            console.log('[EDIT] API response:', updateResult);
+
+            if (!updateResponse.ok || !updateResult.success) {
+                throw new Error(updateResult.error || 'Failed to update product');
+            }
+            console.log('[EDIT] Product updated successfully');
 
             // 2. Upload New Images
             if (newFiles.length > 0) {
@@ -188,7 +196,7 @@ export default function EditProductClient({ product: initialProduct, images: ini
                         product_id: initialProduct.id,
                         storage_path: fileName,
                         media_type: isVideoFile(file) ? 'video' : 'image',
-                        is_primary: false, // Default new ones to false unless none exist?
+                        is_primary: false,
                         sort_order: images.length + index
                     };
                 });
@@ -204,6 +212,7 @@ export default function EditProductClient({ product: initialProduct, images: ini
             }
 
             // 3. Sync to Stripe (creates new or updates existing)
+            console.log('[EDIT] Starting Stripe sync...');
             try {
                 const syncResponse = await fetch('/api/stripe/sync-product', {
                     method: 'POST',
@@ -211,7 +220,9 @@ export default function EditProductClient({ product: initialProduct, images: ini
                     body: JSON.stringify({ productId: initialProduct.id }),
                 });
 
+                console.log('[EDIT] Stripe sync response status:', syncResponse.status);
                 const syncResult = await syncResponse.json();
+                console.log('[EDIT] Stripe sync result:', syncResult);
 
                 if (syncResponse.ok && syncResult.success) {
                     const actionVerb = syncResult.action === 'updated' ? 'updated in' : 'synced to';
@@ -227,17 +238,26 @@ export default function EditProductClient({ product: initialProduct, images: ini
                     });
                 }
             } catch (syncError: any) {
+                console.error('[EDIT] Stripe sync error:', syncError);
                 toast({
                     variant: "destructive",
                     title: "Product Saved",
-                    description: "Product saved but Stripe sync failed."
+                    description: syncError.message || "Product saved but Stripe sync failed."
                 });
             }
-            router.refresh(); // Refresh server state
 
+            console.log('[EDIT] All done, redirecting to /admin/products...');
+            router.push('/admin/products');
+            router.refresh();
         } catch (error: any) {
-            toast({ variant: "destructive", title: "Error", description: error.message });
+            console.error('[EDIT] CATCH BLOCK ERROR:', error);
+            toast({
+                variant: "destructive",
+                title: "Error",
+                description: `Error saving product: ${error.message}`
+            });
         } finally {
+            console.log('[EDIT] Finally block - setting loading to false');
             setLoading(false);
         }
     };
@@ -281,33 +301,30 @@ export default function EditProductClient({ product: initialProduct, images: ini
                         </div>
 
                         <div className="flex items-center gap-8">
-                            <div className="flex items-center space-x-2">
-                                <Label>Active Status</Label>
-                                <div className="flex items-center gap-2">
-                                    <span className={`text-sm ${productData.is_active ? 'text-green-600' : 'text-muted-foreground'}`}>
+                            <div className="flex items-center space-x-3">
+                                <Switch
+                                    id="is_active"
+                                    checked={productData.is_active}
+                                    onCheckedChange={(checked) => handleToggleChange('is_active', checked)}
+                                />
+                                <Label htmlFor="is_active" className="cursor-pointer">
+                                    <span className={productData.is_active ? 'text-green-600' : 'text-muted-foreground'}>
                                         {productData.is_active ? 'Active' : 'Draft'}
                                     </span>
-                                    <Button
-                                        variant="outline" size="sm"
-                                        onClick={() => handleToggleChange('is_active', !productData.is_active)}
-                                        className={productData.is_active ? "border-green-500 bg-green-50" : ""}
-                                    >
-                                        {productData.is_active ? 'Deactivate' : 'Activate'}
-                                    </Button>
-                                </div>
+                                </Label>
                             </div>
 
-                            <div className="flex items-center space-x-2">
-                                <Label>Featured</Label>
-                                <div className="flex items-center gap-2">
-                                    <Button
-                                        variant="outline" size="sm"
-                                        onClick={() => handleToggleChange('featured', !productData.featured)}
-                                        className={productData.featured ? "border-yellow-500 bg-yellow-50" : ""}
-                                    >
+                            <div className="flex items-center space-x-3">
+                                <Switch
+                                    id="featured"
+                                    checked={productData.featured}
+                                    onCheckedChange={(checked) => handleToggleChange('featured', checked)}
+                                />
+                                <Label htmlFor="featured" className="cursor-pointer">
+                                    <span className={productData.featured ? 'text-yellow-600' : 'text-muted-foreground'}>
                                         {productData.featured ? 'Featured' : 'Standard'}
-                                    </Button>
-                                </div>
+                                    </span>
+                                </Label>
                             </div>
                         </div>
 

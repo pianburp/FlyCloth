@@ -5,6 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 import { Upload, Save, X, Loader2, Play } from "lucide-react";
 import Link from "next/link";
 import { useState, useCallback, useMemo } from "react";
@@ -121,6 +122,7 @@ export default function AddProductClient() {
   };
 
   const handleSave = async () => {
+    console.log('[ADD] handleSave started');
     if (!formData.name || !formData.sku || !formData.price) {
       alert("Please fill in all required fields");
       return;
@@ -129,35 +131,33 @@ export default function AddProductClient() {
     setLoading(true);
 
     try {
-      // Ensure browser Supabase client has a valid session
-      // This is needed for RLS-protected DB operations (separate from proxy auth)
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
-        throw new Error('Session expired. Please log in again.');
-      }
+      console.log('[ADD] Starting product creation...');
 
-      // 1. Insert Product
-      const { data: product, error: productError } = await supabase
-        .from('products')
-        .insert({
+      // 1. Create Product via API route (uses server-side Supabase client)
+      console.log('[ADD] Calling API to insert product...');
+      const productResponse = await fetch('/api/admin/products', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
           name: formData.name,
           description: formData.description,
           sku: formData.sku,
           base_price: parseFloat(formData.price),
           is_active: formData.is_active,
           featured: formData.featured
-        })
-        .select()
-        .single();
+        }),
+      });
 
+      console.log('[ADD] API response status:', productResponse.status);
+      const productResult = await productResponse.json();
+      console.log('[ADD] API response:', productResult);
 
-      if (productError) {
-        throw new Error(`Failed to insert product: ${productError.message}`);
+      if (!productResponse.ok || !productResult.success) {
+        throw new Error(productResult.error || 'Failed to create product');
       }
 
-      if (!product) {
-        throw new Error('Product insert returned no data - this may be an RLS policy issue');
-      }
+      const product = productResult.product;
+      console.log('[ADD] Product created:', product.id);
 
       // 2. Upload Media (Images & Videos) & Insert Records
       if (files.length > 0) {
@@ -232,6 +232,7 @@ export default function AddProductClient() {
       if (variantsError) throw variantsError;
 
       // 4. Sync to Stripe
+      console.log('[ADD] Starting Stripe sync...');
       try {
         const syncResponse = await fetch('/api/stripe/sync-product', {
           method: 'POST',
@@ -239,7 +240,9 @@ export default function AddProductClient() {
           body: JSON.stringify({ productId: product.id }),
         });
 
+        console.log('[ADD] Stripe sync response status:', syncResponse.status);
         const syncResult = await syncResponse.json();
+        console.log('[ADD] Stripe sync result:', syncResult);
 
         if (syncResponse.ok && syncResult.success) {
           toast({
@@ -254,6 +257,7 @@ export default function AddProductClient() {
           });
         }
       } catch (syncError: any) {
+        console.error('[ADD] Stripe sync error:', syncError);
         toast({
           variant: "destructive",
           title: "Product Created (Stripe sync failed)",
@@ -261,15 +265,18 @@ export default function AddProductClient() {
         });
       }
 
+      console.log('[ADD] All done, redirecting to /admin/products...');
       router.push('/admin/products');
       router.refresh();
     } catch (error: any) {
+      console.error('[ADD] CATCH BLOCK ERROR:', error);
       toast({
         variant: "destructive",
         title: "Error",
         description: `Error saving product: ${error.message}`,
       });
     } finally {
+      console.log('[ADD] Finally block - setting loading to false');
       setLoading(false);
     }
   };
@@ -353,33 +360,30 @@ export default function AddProductClient() {
             </div>
 
             <div className="flex items-center gap-8">
-              <div className="flex items-center space-x-2">
-                <Label>Active Status</Label>
-                <div className="flex items-center gap-2">
-                  <span className={`text-sm ${formData.is_active ? 'text-green-600' : 'text-muted-foreground'}`}>
+              <div className="flex items-center space-x-3">
+                <Switch
+                  id="is_active"
+                  checked={formData.is_active}
+                  onCheckedChange={(checked) => setFormData(prev => ({ ...prev, is_active: checked }))}
+                />
+                <Label htmlFor="is_active" className="cursor-pointer">
+                  <span className={formData.is_active ? 'text-green-600' : 'text-muted-foreground'}>
                     {formData.is_active ? 'Active' : 'Draft'}
                   </span>
-                  <Button
-                    variant="outline" size="sm"
-                    onClick={() => setFormData(prev => ({ ...prev, is_active: !prev.is_active }))}
-                    className={formData.is_active ? "border-green-500 bg-green-50" : ""}
-                  >
-                    {formData.is_active ? 'Deactivate' : 'Activate'}
-                  </Button>
-                </div>
+                </Label>
               </div>
 
-              <div className="flex items-center space-x-2">
-                <Label>Featured</Label>
-                <div className="flex items-center gap-2">
-                  <Button
-                    variant="outline" size="sm"
-                    onClick={() => setFormData(prev => ({ ...prev, featured: !prev.featured }))}
-                    className={formData.featured ? "border-yellow-500 bg-yellow-50" : ""}
-                  >
+              <div className="flex items-center space-x-3">
+                <Switch
+                  id="featured"
+                  checked={formData.featured}
+                  onCheckedChange={(checked) => setFormData(prev => ({ ...prev, featured: checked }))}
+                />
+                <Label htmlFor="featured" className="cursor-pointer">
+                  <span className={formData.featured ? 'text-yellow-600' : 'text-muted-foreground'}>
                     {formData.featured ? 'Featured' : 'Standard'}
-                  </Button>
-                </div>
+                  </span>
+                </Label>
               </div>
             </div>
 

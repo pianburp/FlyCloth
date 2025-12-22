@@ -1,19 +1,22 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Plus, Minus, Trash2, ShirtIcon } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Plus, Minus, Trash2, ShirtIcon, AlertTriangle } from "lucide-react";
 import Link from "next/link";
 
 interface CartItem {
   id: string;
+  variantId: string;
   productId: string;
   name: string;
   price: number;
   size: string;
   variantInfo: string;
   quantity: number;
+  stockQuantity: number;
   image: string;
 }
 
@@ -26,10 +29,23 @@ interface CartItemComponentProps {
 export function CartItemComponent({ item, onQuantityChange, onRemove }: CartItemComponentProps) {
   const [quantity, setQuantity] = useState(item.quantity);
 
+  // Sync quantity if it changes from parent (e.g., after refresh)
+  useEffect(() => {
+    setQuantity(item.quantity);
+  }, [item.quantity]);
+
+  const isOutOfStock = item.stockQuantity === 0;
+  const isOverStock = quantity > item.stockQuantity;
+  const isAtMaxStock = quantity >= item.stockQuantity;
+
   const handleQuantityChange = (newQuantity: number) => {
     if (newQuantity < 1) return;
-    setQuantity(newQuantity);
-    onQuantityChange(item.id, newQuantity);
+    // Cap at available stock
+    const cappedQuantity = Math.min(newQuantity, item.stockQuantity);
+    if (cappedQuantity < 1 && item.stockQuantity > 0) return;
+
+    setQuantity(cappedQuantity);
+    onQuantityChange(item.id, cappedQuantity);
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -38,9 +54,9 @@ export function CartItemComponent({ item, onQuantityChange, onRemove }: CartItem
   };
 
   return (
-    <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 p-5 transition-colors hover:bg-muted/30">
+    <div className={`flex flex-col sm:flex-row items-start sm:items-center gap-4 p-5 transition-colors hover:bg-muted/30 ${isOutOfStock ? 'opacity-60' : ''}`}>
       {/* Product Image */}
-      <Link href={`/user/products/${item.productId}`} className="flex-shrink-0 w-full sm:w-auto group">
+      <Link href={`/user/products/${item.productId}`} className="flex-shrink-0 w-full sm:w-auto group relative">
         <div className="w-full sm:w-24 h-32 sm:h-28 bg-muted/50 flex items-center justify-center overflow-hidden transition-all duration-300 group-hover:shadow-md">
           {item.image ? (
             <img
@@ -52,6 +68,11 @@ export function CartItemComponent({ item, onQuantityChange, onRemove }: CartItem
             <ShirtIcon className="w-8 h-8 text-muted-foreground/40" />
           )}
         </div>
+        {isOutOfStock && (
+          <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+            <Badge variant="destructive" className="text-xs">Out of Stock</Badge>
+          </div>
+        )}
       </Link>
 
       {/* Product Details */}
@@ -65,6 +86,14 @@ export function CartItemComponent({ item, onQuantityChange, onRemove }: CartItem
           {item.size} · {item.variantInfo}
         </p>
         <p className="text-sm font-medium mt-1">RM {item.price.toFixed(2)}</p>
+
+        {/* Stock warning */}
+        {isOverStock && !isOutOfStock && (
+          <div className="flex items-center gap-1 text-amber-500 text-xs mt-1">
+            <AlertTriangle className="w-3 h-3" />
+            <span>Only {item.stockQuantity} available</span>
+          </div>
+        )}
       </div>
 
       {/* Quantity & Actions */}
@@ -75,6 +104,7 @@ export function CartItemComponent({ item, onQuantityChange, onRemove }: CartItem
             size="icon"
             className="w-8 h-8 hover:bg-muted"
             onClick={() => handleQuantityChange(quantity - 1)}
+            disabled={isOutOfStock || quantity <= 1}
           >
             <Minus className="w-3.5 h-3.5" />
           </Button>
@@ -84,12 +114,16 @@ export function CartItemComponent({ item, onQuantityChange, onRemove }: CartItem
             onChange={handleInputChange}
             className="w-12 text-center text-sm h-8 luxury-input"
             min="1"
+            max={item.stockQuantity}
+            disabled={isOutOfStock}
           />
           <Button
             variant="ghost"
             size="icon"
             className="w-8 h-8 hover:bg-muted"
             onClick={() => handleQuantityChange(quantity + 1)}
+            disabled={isOutOfStock || isAtMaxStock}
+            title={isAtMaxStock ? `Maximum ${item.stockQuantity} available` : undefined}
           >
             <Plus className="w-3.5 h-3.5" />
           </Button>

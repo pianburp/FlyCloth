@@ -5,27 +5,36 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { CartItemComponent } from "./cart-item";
 import Link from "next/link";
-import { ShoppingCart } from "lucide-react";
+import { ShoppingCart, AlertTriangle } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
 
 interface CartItem {
   id: string;
+  variantId: string;
   productId: string;
   name: string;
   price: number;
   size: string;
   variantInfo: string;
   quantity: number;
+  stockQuantity: number;
   image: string;
+}
+
+interface StoreSettings {
+  shipping_fee: number;
+  free_shipping_threshold: number;
+  tax_rate: number;
 }
 
 interface CartManagementProps {
   initialItems: CartItem[];
   userId: string;
+  storeSettings: StoreSettings;
 }
 
-export function CartManagement({ initialItems, userId }: CartManagementProps) {
+export function CartManagement({ initialItems, userId, storeSettings }: CartManagementProps) {
   const [cartItems, setCartItems] = useState<CartItem[]>(initialItems);
   const router = useRouter();
   const supabase = useMemo(() => createClient(), []);
@@ -35,8 +44,12 @@ export function CartManagement({ initialItems, userId }: CartManagementProps) {
   }, [initialItems]);
 
   useEffect(() => {
+    // Get variant IDs from cart items for stock monitoring
+    const variantIds = cartItems.map(item => item.variantId);
+
     const channel = supabase
-      .channel('cart_updates')
+      .channel('cart_and_stock_updates')
+      // Subscribe to cart item changes
       .on(
         'postgres_changes',
         {
@@ -49,12 +62,27 @@ export function CartManagement({ initialItems, userId }: CartManagementProps) {
           router.refresh();
         }
       )
+      // Subscribe to stock changes for items in cart
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'product_variants',
+        },
+        (payload) => {
+          // Only refresh if the updated variant is in our cart
+          if (variantIds.includes(payload.new?.id)) {
+            router.refresh();
+          }
+        }
+      )
       .subscribe();
 
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [supabase, router, userId]);
+  }, [supabase, router, userId, cartItems]);
 
   const handleQuantityChange = async (id: string, quantity: number) => {
     // Optimistic update
@@ -89,9 +117,15 @@ export function CartManagement({ initialItems, userId }: CartManagementProps) {
   };
 
   const subtotal = cartItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-  const tax = subtotal * 0.08; // 8% tax
-  const shipping = subtotal > 50 ? 0 : 9.99; // Free shipping over RM50
+  const taxRate = storeSettings.tax_rate;
+  const tax = subtotal * taxRate;
+  const shipping = subtotal > storeSettings.free_shipping_threshold ? 0 : storeSettings.shipping_fee;
   const total = subtotal + tax + shipping;
+
+  // Stock validation
+  const outOfStockItems = cartItems.filter(item => item.stockQuantity === 0);
+  const overStockItems = cartItems.filter(item => item.quantity > item.stockQuantity && item.stockQuantity > 0);
+  const hasStockIssues = outOfStockItems.length > 0 || overStockItems.length > 0;
 
   if (cartItems.length === 0) {
     return (
@@ -149,7 +183,7 @@ export function CartManagement({ initialItems, userId }: CartManagementProps) {
                 <span className="font-medium">RM {subtotal.toFixed(2)}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-muted-foreground font-light">Tax (8%)</span>
+                <span className="text-muted-foreground font-light">Tax ({(taxRate * 100).toFixed(0)}%)</span>
                 <span className="font-medium">RM {tax.toFixed(2)}</span>
               </div>
               <div className="flex justify-between">
@@ -163,15 +197,34 @@ export function CartManagement({ initialItems, userId }: CartManagementProps) {
               </div>
             </div>
 
-            <Link href="/user/cart/payment" className="block">
-              <Button className="w-full h-12 text-xs tracking-luxury uppercase font-medium bg-primary hover:bg-primary/90 transition-all duration-300">
-                Proceed to Checkout
-              </Button>
-            </Link>
+            {hasStockIssues ? (
+              <div className="space-y-2">
+                <Button
+                  disabled
+                  className="w-full h-12 text-xs tracking-luxury uppercase font-medium opacity-50 cursor-not-allowed"
+                >
+                  Proceed to Checkout
+                </Button>
+                <div className="flex items-center justify-center gap-2 text-amber-500 text-xs">
+                  <AlertTriangle className="w-3.5 h-3.5" />
+                  <span>
+                    {outOfStockItems.length > 0
+                      ? `${outOfStockItems.length} item(s) out of stock`
+                      : `${overStockItems.length} item(s) exceed available stock`}
+                  </span>
+                </div>
+              </div>
+            ) : (
+              <Link href="/user/cart/payment" className="block">
+                <Button className="w-full h-12 text-xs tracking-luxury uppercase font-medium bg-primary hover:bg-primary/90 transition-all duration-300">
+                  Proceed to Checkout
+                </Button>
+              </Link>
+            )}
 
             {shipping > 0 && (
               <p className="text-xs text-center text-muted-foreground font-light">
-                Add RM {(50 - subtotal).toFixed(2)} more for complimentary shipping
+                Add RM {(storeSettings.free_shipping_threshold - subtotal).toFixed(2)} more for complimentary shipping
               </p>
             )}
           </div>

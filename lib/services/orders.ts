@@ -6,6 +6,7 @@
  */
 
 import { createServiceClient } from '@/lib/supabase/service';
+import { stripe } from '@/lib/stripe';
 import type Stripe from 'stripe';
 
 // =============================================================================
@@ -26,6 +27,7 @@ export interface OrderResult {
   success: boolean;
   orderId?: string;
   error?: string;
+  refunded?: boolean;
 }
 
 // =============================================================================
@@ -86,9 +88,40 @@ export async function createOrderFromStripe(
   if (failedItems.length > 0) {
     // Rollback successful decrements
     await rollbackStockDecrements(supabase, stockResults, cartItems);
+    
+    // =========================================================================
+    // AUTOMATIC REFUND: Race condition loser - someone else got the last stock
+    // =========================================================================
+    const paymentIntentId = session.payment_intent as string;
+    if (paymentIntentId) {
+      try {
+        await stripe.refunds.create({
+          payment_intent: paymentIntentId,
+          reason: 'requested_by_customer', // Stock unavailable
+        });
+        console.log(`Auto-refunded payment ${paymentIntentId} due to insufficient stock`);
+        
+        // Optionally: Create a failed order record for tracking
+        await supabase.from('orders').insert({
+          user_id: userId,
+          status: 'cancelled',
+          total_amount: (session.amount_total || 0) / 100,
+          stripe_session_id: session.id,
+          stripe_payment_intent_id: paymentIntentId,
+          payment_status: 'refunded',
+          notes: `Auto-refunded: Insufficient stock for items: ${failedItems.map(f => f.variantId).join(', ')}`,
+        });
+      } catch (refundError) {
+        console.error('Failed to auto-refund:', refundError);
+        // TODO: Queue for manual review
+      }
+    }
+    // =========================================================================
+    
     return { 
       success: false, 
-      error: `Insufficient stock for items: ${failedItems.map(f => f.variantId).join(', ')}` 
+      error: `Insufficient stock for items: ${failedItems.map(f => f.variantId).join(', ')}`,
+      refunded: true,
     };
   }
 

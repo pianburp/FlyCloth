@@ -20,7 +20,7 @@ export async function POST(request: NextRequest) {
 
     const supabase = await createClient();
 
-    // Fetch product details to get Stripe price IDs
+    // Fetch product details with current stock levels
     const variantIds = cartItems.map((item: any) => item.variantId);
     
     const { data: variants, error: variantsError } = await supabase
@@ -28,6 +28,7 @@ export async function POST(request: NextRequest) {
       .select(`
         id,
         price,
+        stock_quantity,
         product_id,
         products!inner(
           id,
@@ -41,6 +42,49 @@ export async function POST(request: NextRequest) {
       console.error('Error fetching variants:', variantsError);
       return NextResponse.json({ error: 'Failed to fetch product details' }, { status: 500 });
     }
+
+    // =========================================================================
+    // HARD GATE: Stock Validation - DO NOT CREATE STRIPE SESSION IF STOCK INVALID
+    // This is the critical trust boundary - frontend cannot be trusted
+    // =========================================================================
+    const stockIssues: Array<{ variantId: string; productName: string; requested: number; available: number }> = [];
+    
+    for (const item of cartItems) {
+      const variant = variants?.find((v: any) => v.id === item.variantId);
+      if (!variant) {
+        stockIssues.push({
+          variantId: item.variantId,
+          productName: item.name,
+          requested: item.quantity,
+          available: 0,
+        });
+        continue;
+      }
+      
+      const stockQuantity = (variant as any).stock_quantity ?? 0;
+      if (item.quantity > stockQuantity) {
+        const product = (variant as any).products;
+        stockIssues.push({
+          variantId: item.variantId,
+          productName: product?.name || item.name,
+          requested: item.quantity,
+          available: stockQuantity,
+        });
+      }
+    }
+
+    if (stockIssues.length > 0) {
+      console.warn('Stock validation failed at checkout hard gate:', stockIssues);
+      return NextResponse.json(
+        { 
+          error: 'Stock validation failed',
+          code: 'INSUFFICIENT_STOCK',
+          issues: stockIssues,
+        },
+        { status: 409 } // Conflict - resource state doesn't allow operation
+      );
+    }
+    // =========================================================================
 
     // Build line items for Stripe Checkout
     const lineItems = cartItems.map((item: any) => {

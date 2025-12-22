@@ -2,6 +2,7 @@ import { getCachedUserProfile } from "@/lib/rbac";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import PaymentClient from "./payment-client";
+import { getStoreSettings } from "@/lib/services/store-settings";
 
 export const dynamic = 'force-dynamic';
 
@@ -13,6 +14,7 @@ export default async function PaymentPage() {
   }
 
   const supabase = await createClient();
+  const storeSettings = await getStoreSettings();
 
   const { data: cartData, error } = await supabase
     .from('cart_items')
@@ -71,5 +73,6 @@ export default async function PaymentPage() {
     };
   }) || [];
 
-  return <PaymentClient cartItems={cartItems} userEmail={profile.email} />;
+  return <PaymentClient cartItems={cartItems} userEmail={profile.email} storeSettings={storeSettings} />;
 }
+

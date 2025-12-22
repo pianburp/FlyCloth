@@ -9,7 +9,18 @@ import {
   ShirtIcon,
   Loader2,
   ExternalLink,
+  AlertTriangle,
+  ArrowLeft,
 } from "lucide-react";
+import Link from "next/link";
+
+interface CartValidationIssue {
+  variantId: string;
+  productName: string;
+  reason: 'OUT_OF_STOCK' | 'INSUFFICIENT_STOCK';
+  requestedQuantity: number;
+  availableStock: number;
+}
 
 interface CartItem {
   id: string;
@@ -22,27 +33,51 @@ interface CartItem {
   image: string;
 }
 
+interface StoreSettings {
+  shipping_fee: number;
+  free_shipping_threshold: number;
+  tax_rate: number;
+}
+
 interface PaymentClientProps {
   cartItems: CartItem[];
   userEmail: string;
+  storeSettings: StoreSettings;
 }
 
-export default function PaymentClient({ cartItems, userEmail }: PaymentClientProps) {
+export default function PaymentClient({ cartItems, userEmail, storeSettings }: PaymentClientProps) {
   const [isProcessing, setIsProcessing] = useState(false);
+  const [isValidating, setIsValidating] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [validationIssues, setValidationIssues] = useState<CartValidationIssue[]>([]);
 
   // Calculate totals
   const subtotal = cartItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-  const tax = subtotal * 0.08;
-  const baseShipping = subtotal > 50 ? 0 : 9.99;
+  const taxRate = storeSettings.tax_rate;
+  const tax = subtotal * taxRate;
+  const baseShipping = subtotal > storeSettings.free_shipping_threshold ? 0 : storeSettings.shipping_fee;
   const total = subtotal + tax + baseShipping;
 
   // Redirect to Stripe Checkout
   const handleCheckout = async () => {
     setIsProcessing(true);
+    setIsValidating(true);
     setError(null);
+    setValidationIssues([]);
 
     try {
+      // Step 1: Validate cart stock levels (Soft Gate)
+      const validationResponse = await fetch('/api/cart/validate');
+      const validationData = await validationResponse.json();
+      setIsValidating(false);
+
+      if (!validationData.valid) {
+        setValidationIssues(validationData.issues);
+        setIsProcessing(false);
+        return;
+      }
+
+      // Step 2: Create Stripe checkout session
       const response = await fetch("/api/stripe/create-checkout-session", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -60,6 +95,20 @@ export default function PaymentClient({ cartItems, userEmail }: PaymentClientPro
 
       const data = await response.json();
 
+      // Handle hard gate stock validation failure (409 Conflict)
+      if (response.status === 409 && data.code === 'INSUFFICIENT_STOCK') {
+        const issues: CartValidationIssue[] = data.issues.map((issue: any) => ({
+          variantId: issue.variantId,
+          productName: issue.productName,
+          reason: issue.available === 0 ? 'OUT_OF_STOCK' : 'INSUFFICIENT_STOCK',
+          requestedQuantity: issue.requested,
+          availableStock: issue.available,
+        }));
+        setValidationIssues(issues);
+        setIsProcessing(false);
+        return;
+      }
+
       if (data.url) {
         // Redirect to Stripe Checkout
         window.location.href = data.url;
@@ -70,6 +119,7 @@ export default function PaymentClient({ cartItems, userEmail }: PaymentClientPro
     } catch (err: any) {
       setError(err.message || "An error occurred");
       setIsProcessing(false);
+      setIsValidating(false);
     }
   };
 
@@ -181,7 +231,7 @@ export default function PaymentClient({ cartItems, userEmail }: PaymentClientPro
                   <span className="font-medium">RM {subtotal.toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-muted-foreground font-light">Tax (8%)</span>
+                  <span className="text-muted-foreground font-light">Tax ({(taxRate * 100).toFixed(0)}%)</span>
                   <span className="font-medium">RM {tax.toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between">
@@ -202,13 +252,44 @@ export default function PaymentClient({ cartItems, userEmail }: PaymentClientPro
                 </div>
               )}
 
+              {/* Validation Issues */}
+              {validationIssues.length > 0 && (
+                <div className="bg-amber-500/10 border border-amber-500/20 px-4 py-3 space-y-3">
+                  <div className="flex items-center gap-2 text-amber-500 text-xs font-medium">
+                    <AlertTriangle className="w-4 h-4" />
+                    <span>Stock Availability Issues</span>
+                  </div>
+                  <div className="space-y-2">
+                    {validationIssues.map((issue) => (
+                      <div key={issue.variantId} className="text-xs text-muted-foreground">
+                        <span className="font-medium">{issue.productName}</span>:{' '}
+                        {issue.reason === 'OUT_OF_STOCK'
+                          ? 'Out of stock'
+                          : `Only ${issue.availableStock} available (requested ${issue.requestedQuantity})`}
+                      </div>
+                    ))}
+                  </div>
+                  <Link href="/user/cart">
+                    <Button variant="outline" size="sm" className="w-full text-xs mt-2">
+                      <ArrowLeft className="w-3 h-3 mr-2" />
+                      Return to Cart
+                    </Button>
+                  </Link>
+                </div>
+              )}
+
               {/* Checkout Button */}
               <Button
                 onClick={handleCheckout}
-                disabled={isProcessing || cartItems.length === 0}
+                disabled={isProcessing || cartItems.length === 0 || validationIssues.length > 0}
                 className="w-full h-14 text-xs tracking-luxury uppercase font-medium transition-all duration-300"
               >
-                {isProcessing ? (
+                {isValidating ? (
+                  <div className="flex items-center gap-2">
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    Validating cart...
+                  </div>
+                ) : isProcessing ? (
                   <div className="flex items-center gap-2">
                     <Loader2 className="w-4 h-4 animate-spin" />
                     Redirecting to Stripe...

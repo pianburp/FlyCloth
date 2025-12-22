@@ -2,6 +2,7 @@ import { getCachedUserProfile } from "@/lib/rbac";
 import { redirect } from "next/navigation";
 import { CartManagement } from "@/components/cart";
 import { createClient } from "@/lib/supabase/server";
+import { getStoreSettings } from "@/lib/services/store-settings";
 
 export const dynamic = 'force-dynamic';
 
@@ -13,6 +14,7 @@ export default async function CartPage() {
   }
 
   const supabase = await createClient();
+  const storeSettings = await getStoreSettings();
 
   const { data: cartData, error } = await supabase
     .from('cart_items')
@@ -20,10 +22,12 @@ export default async function CartPage() {
       id,
       quantity,
       product_variants (
+        id,
         size,
         fit,
         gsm,
         price,
+        stock_quantity,
         products (
           id,
           name,
@@ -58,12 +62,14 @@ export default async function CartPage() {
 
     return {
       id: item.id,
+      variantId: variant.id,
       productId: product.id,
       name: product.name,
       price: Number(variant.price),
       size: variant.size,
       variantInfo: variantInfo,
       quantity: item.quantity,
+      stockQuantity: variant.stock_quantity,
       image: imageUrl || ""
     };
   }) || [];
@@ -77,7 +83,8 @@ export default async function CartPage() {
         <div className="gold-divider mt-6" />
       </div>
 
-      <CartManagement initialItems={cartItems} userId={profile.id} />
+      <CartManagement initialItems={cartItems} userId={profile.id} storeSettings={storeSettings} />
     </div>
   );
 }
+

@@ -4,7 +4,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { AdminSettingsForm } from "./admin-settings-form";
 import { AdminChangePasswordForm } from "./admin-change-password-form";
-import { Shield, User, Lock, Info } from "lucide-react";
+import { StoreSettingsForm } from "./store-settings-form";
+import { getStoreSettingsUncached } from "@/lib/services/store-settings";
+import { Shield, User, Lock, Info, Store } from "lucide-react";
 
 export const dynamic = 'force-dynamic';
 
@@ -21,13 +23,15 @@ export default async function SettingsPage() {
     redirect("/auth/login");
   }
 
+  const storeSettings = await getStoreSettingsUncached();
+
   return (
     <div className="flex flex-col gap-6 sm:gap-8">
       {/* Page Header */}
       <div>
         <h1 className="text-2xl sm:text-3xl font-bold mb-2">Admin Settings</h1>
         <p className="text-sm sm:text-base text-muted-foreground">
-          Manage your admin profile and account security
+          Manage your admin profile, account security, and store settings
         </p>
       </div>
 
@@ -70,7 +74,30 @@ export default async function SettingsPage() {
             <AdminChangePasswordForm />
           </CardContent>
         </Card>
+
+        {/* Store Settings Card */}
+        <Card className="lg:col-span-2">
+          <CardHeader>
+            <div className="flex items-center gap-2">
+              <Store className="w-5 h-5 text-primary" />
+              <CardTitle>Store Settings</CardTitle>
+            </div>
+            <CardDescription>
+              Configure shipping fees, free shipping threshold, and tax rates
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <StoreSettingsForm
+              initialData={{
+                shippingFee: storeSettings.shipping_fee,
+                freeShippingThreshold: storeSettings.free_shipping_threshold,
+                taxRate: storeSettings.tax_rate,
+              }}
+            />
+          </CardContent>
+        </Card>
       </div>
     </div>
   );
 }
+
