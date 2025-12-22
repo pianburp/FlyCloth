@@ -7,6 +7,7 @@ import { Suspense } from "react";
 import { getCachedUserProfile } from "@/lib/rbac";
 import { AuthProvider, AuthUser } from "@/lib/auth-context";
 import { PageSkeleton } from "@/components/shared/page-skeleton";
+import { NotificationDropdown } from "@/components/notification-dropdown";
 
 export default async function UserLayout({
   children,
@@ -51,6 +52,7 @@ export default async function UserLayout({
               <Suspense>
                 <AuthButton />
               </Suspense>
+              <NotificationDropdown />
               <ThemeSwitcher />
             </div>
             {/* Gold accent line */}

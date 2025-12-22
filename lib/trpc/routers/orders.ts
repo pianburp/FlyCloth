@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { router, adminProcedure } from "../trpc";
 import { revalidatePath } from "next/cache";
+import { notifyOrderStatusChange } from "@/lib/services/notifications";
 
 export const ordersRouter = router({
   /**
@@ -15,6 +16,19 @@ export const ordersRouter = router({
     )
     .mutation(async ({ ctx, input }) => {
       const { supabase } = ctx;
+
+      // First, get the current order to know the user and old status
+      const { data: order, error: fetchError } = await supabase
+        .from("orders")
+        .select("user_id, status")
+        .eq("id", input.orderId)
+        .single();
+
+      if (fetchError || !order) {
+        throw new Error("Order not found");
+      }
+
+      const oldStatus = order.status;
 
       const { error } = await supabase
         .from("orders")
@@ -45,9 +59,15 @@ export const ordersRouter = router({
         }
       }
 
+      // Notify user of status change (fire and forget)
+      if (oldStatus !== input.newStatus) {
+        notifyOrderStatusChange(input.orderId, order.user_id, oldStatus, input.newStatus);
+      }
+
       revalidatePath("/admin/orders");
       revalidatePath(`/admin/orders/${input.orderId}`);
       
       return { success: true };
     }),
 });
+

@@ -7,6 +7,7 @@
 
 import { createServiceClient } from '@/lib/supabase/service';
 import { stripe } from '@/lib/stripe';
+import { notifyNewOrder, checkAndNotifyLowStock } from './notifications';
 import type Stripe from 'stripe';
 
 // =============================================================================
@@ -179,6 +180,12 @@ export async function createOrderFromStripe(
     .delete()
     .eq('user_id', userId);
 
+  // 6. Send notifications (fire and forget)
+  notifyNewOrder(order.id, userId, totalAmount);
+  
+  // 7. Check for low stock after purchase and notify if needed
+  checkLowStockAfterPurchase(supabase, cartItems, stockResults);
+
   console.log(`Order ${order.id} processed successfully`);
   return { success: true, orderId: order.id };
 }
@@ -267,3 +274,50 @@ function updateSoldCounts(
     });
   });
 }
+
+const LOW_STOCK_THRESHOLD = 25;
+
+/**
+ * Check stock levels after a purchase and notify admins if stock dropped below threshold.
+ * Only notifies on FIRST drop below threshold (when previousStock >= 25 and currentStock < 25).
+ */
+async function checkLowStockAfterPurchase(
+  supabase: ReturnType<typeof createServiceClient>,
+  items: CartItemForOrder[],
+  stockResults: Array<{ variantId: string; success: boolean }>
+) {
+  // Only check items that were successfully decremented
+  const successfulItems = stockResults.filter(r => r.success);
+  
+  for (const result of successfulItems) {
+    const item = items.find(i => i.variantId === result.variantId);
+    if (!item) continue;
+    
+    // Get current stock level
+    const { data: variant } = await supabase
+      .from('product_variants')
+      .select('stock_quantity')
+      .eq('id', result.variantId)
+      .single();
+    
+    if (!variant) continue;
+    
+    const currentStock = variant.stock_quantity;
+    const previousStock = currentStock + item.quantity; // What it was before decrement
+    
+    // Check if we just crossed the threshold
+    const justDroppedBelowThreshold = previousStock >= LOW_STOCK_THRESHOLD && currentStock < LOW_STOCK_THRESHOLD;
+    const justWentOutOfStock = previousStock > 0 && currentStock === 0;
+    
+    if (justDroppedBelowThreshold || justWentOutOfStock) {
+      await checkAndNotifyLowStock(
+        result.variantId,
+        item.name,
+        `${item.size} / ${item.variantInfo}`,
+        previousStock,
+        currentStock
+      );
+    }
+  }
+}
+

@@ -3,6 +3,7 @@ import { ordersRouter } from "./routers/orders";
 import { cartRouter } from "./routers/cart";
 import { productsRouter } from "./routers/products";
 import { userRouter } from "./routers/user";
+import { notificationsRouter } from "./routers/notifications";
 
 /**
  * Main application router
@@ -13,7 +14,9 @@ export const appRouter = router({
   cart: cartRouter,
   products: productsRouter,
   user: userRouter,
+  notifications: notificationsRouter,
 });
 
 // Export type for client usage
 export type AppRouter = typeof appRouter;
+

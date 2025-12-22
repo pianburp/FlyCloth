@@ -3,6 +3,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { getCachedUserProfile } from "@/lib/rbac";
 import { revalidatePath } from "next/cache";
+import { notifyBadReview } from "@/lib/services/notifications";
 
 export async function createReview(formData: FormData) {
   const profile = await getCachedUserProfile();
@@ -22,6 +23,13 @@ export async function createReview(formData: FormData) {
 
   const supabase = await createClient();
 
+  // Get product name for notification
+  const { data: product } = await supabase
+    .from('products')
+    .select('name')
+    .eq('id', productId)
+    .single();
+
   const { error } = await supabase
     .from('product_reviews')
     .insert({
@@ -36,6 +44,11 @@ export async function createReview(formData: FormData) {
   if (error) {
     console.error("Error creating review:", error);
     throw new Error("Failed to create review");
+  }
+
+  // Notify admins of bad reviews (2 stars or below)
+  if (rating <= 2 && product) {
+    notifyBadReview(productId, product.name, rating, title);
   }
 
   revalidatePath('/user/orders');

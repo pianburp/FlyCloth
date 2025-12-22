@@ -7,6 +7,7 @@ import { Suspense } from "react";
 import { getCachedUserProfile } from "@/lib/rbac";
 import { AuthProvider, AuthUser } from "@/lib/auth-context";
 import { AdminPageSkeleton } from "@/components/shared/page-skeleton";
+import { NotificationDropdown } from "@/components/notification-dropdown";
 
 export default async function AdminLayout({
   children,
@@ -45,6 +46,7 @@ export default async function AdminLayout({
               <Suspense>
                 <AuthButton />
               </Suspense>
+              <NotificationDropdown />
               <ThemeSwitcher />
             </div>
           </header>
