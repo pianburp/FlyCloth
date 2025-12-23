@@ -2,9 +2,31 @@ import { NextRequest, NextResponse } from 'next/server';
 import { stripe } from '@/lib/stripe';
 import { createClient } from '@/lib/supabase/server';
 import { getUserProfile } from '@/lib/rbac';
+import { rateLimit } from '@/lib/rate-limit';
+
+// Rate limiter: 5 checkout requests per minute per IP
+const checkoutLimiter = rateLimit({
+  interval: 60 * 1000, // 1 minute
+  maxRequests: 5,
+});
 
 export async function POST(request: NextRequest) {
   try {
+    // =========================================================================
+    // RATE LIMITING - Prevent checkout spam and DoS
+    // =========================================================================
+    const ip = request.headers.get('x-forwarded-for')?.split(',')[0] || 
+               request.headers.get('x-real-ip') || 
+               'unknown';
+    
+    const { success: rateLimitOk, remaining } = checkoutLimiter.check(ip);
+    if (!rateLimitOk) {
+      return NextResponse.json(
+        { error: 'Too many requests. Please wait a moment.' },
+        { status: 429, headers: { 'Retry-After': '60' } }
+      );
+    }
+
     // Verify user is authenticated
     const profile = await getUserProfile();
     if (!profile) {
@@ -14,21 +36,38 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { cartItems } = body;
 
-    if (!cartItems || cartItems.length === 0) {
+    if (!cartItems || !Array.isArray(cartItems) || cartItems.length === 0) {
       return NextResponse.json({ error: 'Cart is empty' }, { status: 400 });
     }
 
-    const supabase = await createClient();
+    // =========================================================================
+    // SECURITY: Only accept variantId and quantity from client
+    // ALL OTHER DATA (price, name, etc.) MUST come from database
+    // =========================================================================
+    const clientItems = cartItems.map((item: any) => ({
+      variantId: typeof item.variantId === 'string' ? item.variantId : null,
+      quantity: typeof item.quantity === 'number' && item.quantity > 0 ? Math.floor(item.quantity) : 0,
+      // These are for display only, will be overwritten by DB values
+      size: item.size || '',
+      variantInfo: item.variantInfo || '',
+    })).filter(item => item.variantId && item.quantity > 0);
 
-    // Fetch product details with current stock levels
-    const variantIds = cartItems.map((item: any) => item.variantId);
+    if (clientItems.length === 0) {
+      return NextResponse.json({ error: 'Invalid cart data' }, { status: 400 });
+    }
+
+    const supabase = await createClient();
+    const variantIds = clientItems.map(item => item.variantId);
     
+    // Fetch AUTHORITATIVE product details from database
     const { data: variants, error: variantsError } = await supabase
       .from('product_variants')
       .select(`
         id,
         price,
         stock_quantity,
+        size,
+        fit,
         product_id,
         products!inner(
           id,
@@ -43,31 +82,37 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Failed to fetch product details' }, { status: 500 });
     }
 
+    // Validate all variants exist
+    if (!variants || variants.length !== clientItems.length) {
+      return NextResponse.json({ error: 'One or more products not found' }, { status: 400 });
+    }
+
     // =========================================================================
     // HARD GATE: Stock Validation - DO NOT CREATE STRIPE SESSION IF STOCK INVALID
     // This is the critical trust boundary - frontend cannot be trusted
     // =========================================================================
     const stockIssues: Array<{ variantId: string; productName: string; requested: number; available: number }> = [];
     
-    for (const item of cartItems) {
-      const variant = variants?.find((v: any) => v.id === item.variantId);
+    for (const clientItem of clientItems) {
+      const variant = variants.find((v: any) => v.id === clientItem.variantId);
       if (!variant) {
+        const product = (variant as any)?.products;
         stockIssues.push({
-          variantId: item.variantId,
-          productName: item.name,
-          requested: item.quantity,
+          variantId: clientItem.variantId,
+          productName: product?.name || 'Unknown Product',
+          requested: clientItem.quantity,
           available: 0,
         });
         continue;
       }
       
       const stockQuantity = (variant as any).stock_quantity ?? 0;
-      if (item.quantity > stockQuantity) {
+      if (clientItem.quantity > stockQuantity) {
         const product = (variant as any).products;
         stockIssues.push({
-          variantId: item.variantId,
-          productName: product?.name || item.name,
-          requested: item.quantity,
+          variantId: clientItem.variantId,
+          productName: product?.name || 'Unknown Product',
+          requested: clientItem.quantity,
           available: stockQuantity,
         });
       }
@@ -81,45 +126,67 @@ export async function POST(request: NextRequest) {
           code: 'INSUFFICIENT_STOCK',
           issues: stockIssues,
         },
-        { status: 409 } // Conflict - resource state doesn't allow operation
+        { status: 409 }
       );
     }
     // =========================================================================
 
-    // Build line items for Stripe Checkout
-    const lineItems = cartItems.map((item: any) => {
-      const variant = variants?.find((v: any) => v.id === item.variantId);
-      // Access products as any to avoid type issues with Supabase joins
-      const product = variant?.products as { id: string; name: string; stripe_price_id: string | null } | undefined;
+    // =========================================================================
+    // BUILD LINE ITEMS WITH DATABASE PRICES (NEVER CLIENT PRICES)
+    // =========================================================================
+    const lineItems = clientItems.map((clientItem) => {
+      const variant = variants.find((v: any) => v.id === clientItem.variantId)!;
+      const product = (variant as any).products as { id: string; name: string; stripe_price_id: string | null };
+      const dbPrice = (variant as any).price as number;
+      const size = (variant as any).size || clientItem.size;
+      const fit = (variant as any).fit || clientItem.variantInfo;
 
-      // If product has a Stripe price ID, use it
+      // If product has a Stripe price ID, use it (pre-validated price)
       if (product?.stripe_price_id) {
         return {
           price: product.stripe_price_id,
-          quantity: item.quantity,
+          quantity: clientItem.quantity,
         };
       }
 
-      // Otherwise, create a price_data for ad-hoc pricing
+      // Otherwise, create price_data with DATABASE price (NEVER client price)
       return {
         price_data: {
           currency: 'myr',
           product_data: {
-            name: item.name,
-            description: `${item.size} / ${item.variantInfo}`,
+            name: product.name,
+            description: `${size} / ${fit}`,
           },
-          unit_amount: Math.round(item.price * 100), // Convert to cents
+          unit_amount: Math.round(dbPrice * 100), // DATABASE price in cents
         },
-        quantity: item.quantity,
+        quantity: clientItem.quantity,
       };
     });
 
     // Get the app URL for redirects
     const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
 
-    // Build checkout session options
+    // =========================================================================
+    // SECURE METADATA: Only store variant IDs and quantities
+    // Prices will be re-fetched from DB in webhook handler
+    // =========================================================================
+    const metadataItems = clientItems.map((clientItem) => {
+      const variant = variants.find((v: any) => v.id === clientItem.variantId)!;
+      const product = (variant as any).products;
+      return {
+        variantId: clientItem.variantId,
+        productId: (variant as any).product_id,
+        quantity: clientItem.quantity,
+        // Store DB values for order creation (not client values)
+        name: product.name,
+        size: (variant as any).size || '',
+        variantInfo: (variant as any).fit || '',
+        price: (variant as any).price, // DB price for order record
+      };
+    });
+
     const sessionOptions: any = {
-      payment_method_types: ['card', 'grabpay'], // Popular Malaysian payment methods (fpx disabled - not activated in Stripe dashboard)
+      payment_method_types: ['card', 'grabpay'],
       mode: 'payment',
       line_items: lineItems,
       success_url: `${appUrl}/user/cart/payment/success?session_id={CHECKOUT_SESSION_ID}`,
@@ -127,24 +194,14 @@ export async function POST(request: NextRequest) {
       customer_email: profile.email,
       metadata: {
         user_id: profile.id,
-        cart_items: JSON.stringify(
-          cartItems.map((item: any) => ({
-            variantId: item.variantId,
-            name: item.name,
-            variantInfo: item.variantInfo,
-            size: item.size,
-            quantity: item.quantity,
-            price: item.price,
-          }))
-        ),
+        // Secure metadata - prices are from DB, not client
+        cart_items: JSON.stringify(metadataItems),
       },
       shipping_address_collection: {
-        allowed_countries: ['MY', 'SG', 'BN'], // Malaysia, Singapore, Brunei
+        allowed_countries: ['MY', 'SG', 'BN'],
       },
+      allow_promotion_codes: true,
     };
-
-    // Always allow promotion codes to be entered at Stripe checkout
-    sessionOptions.allow_promotion_codes = true;
 
     // Create Stripe checkout session
     const session = await stripe.checkout.sessions.create(sessionOptions);
@@ -156,7 +213,7 @@ export async function POST(request: NextRequest) {
   } catch (error: any) {
     console.error('Error creating checkout session:', error);
     return NextResponse.json(
-      { error: error.message || 'Failed to create checkout session' },
+      { error: 'Failed to create checkout session' },
       { status: 500 }
     );
   }

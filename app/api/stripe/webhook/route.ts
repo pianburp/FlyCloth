@@ -12,14 +12,15 @@ export async function POST(request: NextRequest) {
   const signature = request.headers.get('stripe-signature');
 
   if (!signature) {
-    console.error('Missing Stripe signature');
-    return NextResponse.json({ error: 'Missing signature' }, { status: 400 });
+    // Sanitized log - no details exposed
+    console.error('Webhook: Missing signature header');
+    return NextResponse.json({ error: 'Invalid request' }, { status: 400 });
   }
 
   const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
   if (!webhookSecret) {
-    console.error('STRIPE_WEBHOOK_SECRET is not set');
-    return NextResponse.json({ error: 'Webhook secret not configured' }, { status: 500 });
+    console.error('Webhook: STRIPE_WEBHOOK_SECRET not configured');
+    return NextResponse.json({ error: 'Server configuration error' }, { status: 500 });
   }
 
   let event: Stripe.Event;
@@ -27,8 +28,9 @@ export async function POST(request: NextRequest) {
   try {
     event = stripe.webhooks.constructEvent(body, signature, webhookSecret);
   } catch (err: any) {
-    console.error(`Webhook signature verification failed: ${err.message}`);
-    return NextResponse.json({ error: 'Invalid signature' }, { status: 400 });
+    // Sanitized error - don't expose verification details
+    console.error('Webhook: Signature verification failed');
+    return NextResponse.json({ error: 'Invalid request' }, { status: 400 });
   }
 
   // Handle the event
@@ -38,8 +40,15 @@ export async function POST(request: NextRequest) {
         const session = event.data.object as Stripe.Checkout.Session;
         const result = await createOrderFromStripe(session);
         if (!result.success) {
-          console.error('Order creation failed:', result.error);
+          console.error(`Webhook: Order creation failed for session ${session.id}`);
         }
+        break;
+      }
+
+      case 'checkout.session.expired': {
+        // Handle abandoned checkouts - useful for analytics and recovery emails
+        const session = event.data.object as Stripe.Checkout.Session;
+        await handleSessionExpired(session);
         break;
       }
 
@@ -50,14 +59,41 @@ export async function POST(request: NextRequest) {
       }
 
       default:
-        console.log(`Unhandled event type: ${event.type}`);
+        // Only log in development
+        if (process.env.NODE_ENV === 'development') {
+          console.log(`Webhook: Unhandled event type: ${event.type}`);
+        }
     }
 
     return NextResponse.json({ received: true });
   } catch (error) {
-    console.error('Error processing webhook:', error);
-    return NextResponse.json({ error: 'Webhook processing failed' }, { status: 500 });
+    // Sanitized error logging
+    console.error('Webhook: Processing error occurred');
+    return NextResponse.json({ error: 'Processing error' }, { status: 500 });
   }
+}
+
+/**
+ * Handle expired checkout session (abandoned cart)
+ */
+async function handleSessionExpired(session: Stripe.Checkout.Session) {
+  const supabase = createServiceClient();
+  const userId = session.metadata?.user_id;
+
+  if (!userId) {
+    console.log(`Webhook: Expired session without user_id: ${session.id}`);
+    return;
+  }
+
+  // Log for analytics (could be expanded to send recovery emails)
+  console.log(`Webhook: Checkout abandoned by user ${userId}, session ${session.id}`);
+
+  // Optional: Track abandoned carts for analytics
+  // await supabase.from('abandoned_carts').insert({
+  //   user_id: userId,
+  //   stripe_session_id: session.id,
+  //   created_at: new Date().toISOString(),
+  // });
 }
 
 /**
@@ -72,8 +108,9 @@ async function handlePaymentFailed(paymentIntent: Stripe.PaymentIntent) {
     .eq('stripe_payment_intent_id', paymentIntent.id);
 
   if (error) {
-    console.error('Error updating failed payment status:', error);
+    console.error('Webhook: Failed to update payment status');
   }
 
-  console.log(`Payment failed for intent: ${paymentIntent.id}`);
+  console.log(`Webhook: Payment failed for intent: ${paymentIntent.id}`);
 }
+

@@ -10,6 +10,29 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase/service';
 import { createClient } from '@/lib/supabase/server';
 import { createShipment, isEasyParcelEnabled } from '@/lib/easyparcel';
+import { z } from 'zod';
+
+// =============================================================================
+// INPUT VALIDATION SCHEMA
+// =============================================================================
+const createShipmentSchema = z.object({
+  orderId: z.string().uuid('Invalid order ID format'),
+  weight: z.number()
+    .min(0.1, 'Weight must be at least 0.1 kg')
+    .max(30, 'Weight cannot exceed 30 kg')
+    .default(1.0),
+  collectDate: z.string()
+    .optional()
+    .refine((date) => {
+      if (!date) return true; // Optional field
+      const parsed = new Date(date);
+      if (isNaN(parsed.getTime())) return false;
+      // Must be today or future
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      return parsed >= today;
+    }, 'Collect date must be today or a future date'),
+});
 
 export async function POST(request: NextRequest) {
   // Check admin auth
@@ -36,12 +59,24 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'EasyParcel is not configured' }, { status: 500 });
   }
 
-  const body = await request.json();
-  const { orderId, weight = 1.0, collectDate } = body;
-
-  if (!orderId) {
-    return NextResponse.json({ error: 'Order ID is required' }, { status: 400 });
+  // =============================================================================
+  // VALIDATE INPUT WITH ZOD
+  // =============================================================================
+  let body;
+  try {
+    body = await request.json();
+  } catch {
+    return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 });
   }
+
+  const validation = createShipmentSchema.safeParse(body);
+  if (!validation.success) {
+    const errors = validation.error.issues.map((e) => e.message).join(', ');
+    return NextResponse.json({ error: errors }, { status: 400 });
+  }
+
+  const { orderId, weight, collectDate } = validation.data;
+  // =============================================================================
 
   const serviceClient = createServiceClient();
 
@@ -86,7 +121,7 @@ export async function POST(request: NextRequest) {
   // Build recipient address
   const recipient = {
     name: shippingAddr.name || order.user_profile?.full_name || 'Customer',
-    contact: order.user_profile?.phone || '0000000000',
+    contact: order.user_profile?.phone || settings.pickup_contact || process.env.STORE_PHONE || '0000000000',
     line1: shippingAddr.line1 || shippingAddr.address || order.user_profile?.address || '',
     line2: shippingAddr.line2 || '',
     city: shippingAddr.city || 'Unknown',
@@ -99,7 +134,7 @@ export async function POST(request: NextRequest) {
   const pickup = {
     name: settings.pickup_name || 'Store',
     company: settings.pickup_company || '',
-    contact: settings.pickup_contact || '0000000000',
+    contact: settings.pickup_contact || process.env.STORE_PHONE || '0000000000',
     line1: settings.pickup_addr1 || '',
     line2: settings.pickup_addr2 || '',
     city: settings.pickup_city || 'Unknown',

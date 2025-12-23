@@ -10,6 +10,14 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createServiceClient } from '@/lib/supabase/service';
 import { createClient } from '@/lib/supabase/server';
 import { payShipment, isEasyParcelEnabled, getTrackingUrl } from '@/lib/easyparcel';
+import { z } from 'zod';
+
+// =============================================================================
+// INPUT VALIDATION SCHEMA
+// =============================================================================
+const payShipmentSchema = z.object({
+  orderId: z.string().uuid('Invalid order ID format'),
+});
 
 export async function POST(request: NextRequest) {
   // Check admin auth
@@ -36,12 +44,24 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'EasyParcel is not configured' }, { status: 500 });
   }
 
-  const body = await request.json();
-  const { orderId } = body;
-
-  if (!orderId) {
-    return NextResponse.json({ error: 'Order ID is required' }, { status: 400 });
+  // =============================================================================
+  // VALIDATE INPUT WITH ZOD
+  // =============================================================================
+  let body;
+  try {
+    body = await request.json();
+  } catch {
+    return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 });
   }
+
+  const validation = payShipmentSchema.safeParse(body);
+  if (!validation.success) {
+    const errors = validation.error.issues.map((e) => e.message).join(', ');
+    return NextResponse.json({ error: errors }, { status: 400 });
+  }
+
+  const { orderId } = validation.data;
+  // =============================================================================
 
   const serviceClient = createServiceClient();
 

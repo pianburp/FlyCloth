@@ -1,6 +1,7 @@
 import { requireAdmin } from "@/lib/rbac";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { createServiceClient } from "@/lib/supabase/service";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Star } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -27,6 +28,7 @@ export default async function ReviewsPage() {
     }
 
     const supabase = await createClient();
+    const serviceClient = createServiceClient();
 
     // Fetch all reviews with product and user info
     const { data: reviews, error } = await supabase
@@ -56,8 +58,8 @@ export default async function ReviewsPage() {
         .from('profiles')
         .select('id, full_name');
 
-    // Fetch auth users for emails
-    const { data: authData } = await supabase.auth.admin.listUsers();
+    // Fetch auth users for emails - requires service role key
+    const { data: authData } = await serviceClient.auth.admin.listUsers();
     const authUsers = authData?.users || [];
 
     // Merge data
@@ -93,7 +95,7 @@ export default async function ReviewsPage() {
             <div>
                 <h1 className="text-2xl sm:text-3xl font-bold mb-2">Reviews Center</h1>
                 <p className="text-sm sm:text-base text-muted-foreground">
-                    View customer reviews and feedback 
+                    View customer reviews and feedback
                 </p>
             </div>
 
