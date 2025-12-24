@@ -81,12 +81,8 @@ async function handleSessionExpired(session: Stripe.Checkout.Session) {
   const userId = session.metadata?.user_id;
 
   if (!userId) {
-    console.log(`Webhook: Expired session without user_id: ${session.id}`);
     return;
   }
-
-  // Log for analytics (could be expanded to send recovery emails)
-  console.log(`Webhook: Checkout abandoned by user ${userId}, session ${session.id}`);
 
   // Optional: Track abandoned carts for analytics
   // await supabase.from('abandoned_carts').insert({
@@ -111,6 +107,5 @@ async function handlePaymentFailed(paymentIntent: Stripe.PaymentIntent) {
     console.error('Webhook: Failed to update payment status');
   }
 
-  console.log(`Webhook: Payment failed for intent: ${paymentIntent.id}`);
 }
 

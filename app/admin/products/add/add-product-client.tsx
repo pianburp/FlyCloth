@@ -122,19 +122,19 @@ export default function AddProductClient() {
   };
 
   const handleSave = async () => {
-    console.log('[ADD] handleSave started');
     if (!formData.name || !formData.sku || !formData.price) {
-      alert("Please fill in all required fields");
+      toast({
+        variant: "destructive",
+        title: "Missing Fields",
+        description: "Please fill in all required fields (name, SKU, and price).",
+      });
       return;
     }
 
     setLoading(true);
 
     try {
-      console.log('[ADD] Starting product creation...');
-
       // 1. Create Product via API route (uses server-side Supabase client)
-      console.log('[ADD] Calling API to insert product...');
       const productResponse = await fetch('/api/admin/products', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -148,16 +148,13 @@ export default function AddProductClient() {
         }),
       });
 
-      console.log('[ADD] API response status:', productResponse.status);
       const productResult = await productResponse.json();
-      console.log('[ADD] API response:', productResult);
 
       if (!productResponse.ok || !productResult.success) {
         throw new Error(productResult.error || 'Failed to create product');
       }
 
       const product = productResult.product;
-      console.log('[ADD] Product created:', product.id);
 
       // 2. Upload Media (Images & Videos) & Insert Records
       if (files.length > 0) {
@@ -232,7 +229,6 @@ export default function AddProductClient() {
       if (variantsError) throw variantsError;
 
       // 4. Sync to Stripe
-      console.log('[ADD] Starting Stripe sync...');
       try {
         const syncResponse = await fetch('/api/stripe/sync-product', {
           method: 'POST',
@@ -240,9 +236,7 @@ export default function AddProductClient() {
           body: JSON.stringify({ productId: product.id }),
         });
 
-        console.log('[ADD] Stripe sync response status:', syncResponse.status);
         const syncResult = await syncResponse.json();
-        console.log('[ADD] Stripe sync result:', syncResult);
 
         if (syncResponse.ok && syncResult.success) {
           toast({
@@ -265,7 +259,6 @@ export default function AddProductClient() {
         });
       }
 
-      console.log('[ADD] All done, redirecting to /admin/products...');
       router.push('/admin/products');
       router.refresh();
     } catch (error: any) {
@@ -276,7 +269,6 @@ export default function AddProductClient() {
         description: `Error saving product: ${error.message}`,
       });
     } finally {
-      console.log('[ADD] Finally block - setting loading to false');
       setLoading(false);
     }
   };

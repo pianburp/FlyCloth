@@ -150,14 +150,10 @@ export default function EditProductClient({ product: initialProduct, images: ini
     }
 
     const handleSaveAll = async () => {
-        console.log('[EDIT] handleSaveAll started');
         setLoading(true);
 
         try {
-            console.log('[EDIT] Starting product update...');
-
             // 1. Update Product Details via API route (uses server-side Supabase client)
-            console.log('[EDIT] Calling API to update product...', { id: initialProduct.id });
             const updateResponse = await fetch('/api/admin/products', {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
@@ -172,14 +168,11 @@ export default function EditProductClient({ product: initialProduct, images: ini
                 }),
             });
 
-            console.log('[EDIT] API response status:', updateResponse.status);
             const updateResult = await updateResponse.json();
-            console.log('[EDIT] API response:', updateResult);
 
             if (!updateResponse.ok || !updateResult.success) {
                 throw new Error(updateResult.error || 'Failed to update product');
             }
-            console.log('[EDIT] Product updated successfully');
 
             // 2. Upload New Images
             if (newFiles.length > 0) {
@@ -212,7 +205,6 @@ export default function EditProductClient({ product: initialProduct, images: ini
             }
 
             // 3. Sync to Stripe (creates new or updates existing)
-            console.log('[EDIT] Starting Stripe sync...');
             try {
                 const syncResponse = await fetch('/api/stripe/sync-product', {
                     method: 'POST',
@@ -220,9 +212,7 @@ export default function EditProductClient({ product: initialProduct, images: ini
                     body: JSON.stringify({ productId: initialProduct.id }),
                 });
 
-                console.log('[EDIT] Stripe sync response status:', syncResponse.status);
                 const syncResult = await syncResponse.json();
-                console.log('[EDIT] Stripe sync result:', syncResult);
 
                 if (syncResponse.ok && syncResult.success) {
                     const actionVerb = syncResult.action === 'updated' ? 'updated in' : 'synced to';
@@ -246,7 +236,6 @@ export default function EditProductClient({ product: initialProduct, images: ini
                 });
             }
 
-            console.log('[EDIT] All done, redirecting to /admin/products...');
             router.push('/admin/products');
             router.refresh();
         } catch (error: any) {
@@ -257,7 +246,6 @@ export default function EditProductClient({ product: initialProduct, images: ini
                 description: `Error saving product: ${error.message}`
             });
         } finally {
-            console.log('[EDIT] Finally block - setting loading to false');
             setLoading(false);
         }
     };

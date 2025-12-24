@@ -7,9 +7,20 @@ import { Suspense } from "react";
 import { Hero, Features, ContactUs } from "@/components/marketing";
 import { RootLayoutWrapper } from "@/components/layout/root-layout-wrapper";
 import { getCachedUserProfile } from "@/lib/rbac";
-import { AuthProvider, AuthUser } from "@/lib/auth-context";
+import { AuthProvider } from "@/lib/auth-context";
 
 import { createClient } from "@/lib/supabase/server";
+
+// Shared content component to avoid duplication
+function MainContent({ promotedProducts }: { promotedProducts: any[] }) {
+  return (
+    <>
+      <Hero />
+      <Features promotedProducts={promotedProducts} />
+      <ContactUs />
+    </>
+  );
+}
 
 export default async function Home() {
   const profile = await getCachedUserProfile();
@@ -28,19 +39,18 @@ export default async function Home() {
         is_primary
       )
     `)
-    .eq('is_active', true) // Ensure we only show active products
+    .eq('is_active', true)
     .eq('featured', true)
     .order('created_at', { ascending: false })
     .limit(3);
 
+  const products = promotedProducts || [];
+
+  // Authenticated user view
   if (profile) {
     return (
       <RootLayoutWrapper>
-        <Hero />
-        <div className="flex flex-col">
-          <Features promotedProducts={promotedProducts || []} />
-          <ContactUs />
-        </div>
+        <MainContent promotedProducts={products} />
       </RootLayoutWrapper>
     );
   }
@@ -51,15 +61,13 @@ export default async function Home() {
       <SidebarProvider defaultOpen={false}>
         <AppSidebar />
         <SidebarInset>
-          {/* Header - Consistent with authenticated layout */}
+          {/* Header */}
           <header className="w-full flex justify-between items-center border-b border-b-foreground/10 h-14 sm:h-16 px-2 sm:px-4 sticky top-0 bg-background/95 backdrop-blur-md z-50">
             <div className="flex items-center gap-2 sm:gap-4">
               <SidebarTrigger className="-ml-1" />
-              {/* Desktop logo */}
               <Link href="/" className="text-xl font-light tracking-tight hidden sm:block">
                 FlyCloth
               </Link>
-              {/* Mobile logo */}
               <Link href="/" className="text-base font-light tracking-tight sm:hidden">
                 FlyCloth
               </Link>
@@ -75,14 +83,7 @@ export default async function Home() {
 
           {/* Main Content */}
           <main className="flex-1 w-full bg-background">
-            {/* Hero Section */}
-            <Hero />
-
-            {/* Features/Collections Section */}
-            <Features promotedProducts={promotedProducts || []} />
-
-            {/*Contact Section */}
-            <ContactUs />
+            <MainContent promotedProducts={products} />
           </main>
 
           {/* Footer */}

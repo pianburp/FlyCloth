@@ -67,7 +67,6 @@ export async function createOrderFromStripe(
     .single();
 
   if (existingOrder) {
-    console.log(`Order already exists for session ${session.id}: ${existingOrder.id}`);
     return { success: true, orderId: existingOrder.id };
   }
 
@@ -100,7 +99,7 @@ export async function createOrderFromStripe(
           payment_intent: paymentIntentId,
           reason: 'requested_by_customer', // Stock unavailable
         });
-        console.log(`Auto-refunded payment ${paymentIntentId} due to insufficient stock`);
+
         
         // Optionally: Create a failed order record for tracking
         await supabase.from('orders').insert({
@@ -150,7 +149,7 @@ export async function createOrderFromStripe(
     return { success: false, error: orderError.message };
   }
 
-  console.log(`Order created: ${order.id} for session ${session.id}`);
+
 
   // 3. Create order items
   const orderItems = cartItems.map((item) => ({
@@ -186,7 +185,6 @@ export async function createOrderFromStripe(
   // 7. Check for low stock after purchase and notify if needed
   checkLowStockAfterPurchase(supabase, cartItems, stockResults);
 
-  console.log(`Order ${order.id} processed successfully`);
   return { success: true, orderId: order.id };
 }
 

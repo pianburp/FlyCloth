@@ -62,9 +62,6 @@ export default async function ProductsPage() {
     };
   });
 
-  // Count synced products
-  const syncedCount = products.filter(p => p.stripe_price_id).length;
-
   async function deleteProduct(formData: FormData) {
     'use server'
 
