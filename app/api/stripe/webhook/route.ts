@@ -59,9 +59,11 @@ export async function POST(request: NextRequest) {
       }
 
       default:
-        // Only log in development
+        // Only log in development - logInfo is silent in production
+        // Safe: event.type is not sensitive (e.g., "invoice.paid")
         if (process.env.NODE_ENV === 'development') {
-          console.log(`Webhook: Unhandled event type: ${event.type}`);
+          // Using inline log instead of import to keep webhook minimal
+          console.log(`[Webhook] Unhandled: ${event.type}`);
         }
     }
 

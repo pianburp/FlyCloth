@@ -47,8 +47,14 @@ export default async function CustomersPage() {
     }
 
     // Fetch auth users to get emails (requires service role key)
-    const { data: authData } = await serviceClient.auth.admin.listUsers();
+    // TODO: Implement pagination when user base grows large (>1000 users)
+    const { data: authData } = await serviceClient.auth.admin.listUsers({ perPage: 1000 });
     const authUsers = authData?.users || [];
+
+    // Log warning if approaching limit
+    if (authUsers.length >= 900) {
+        console.warn('[Admin Customers] Approaching user list limit. Consider implementing pagination.');
+    }
 
     // Fetch all orders for statistics
     const { data: orders } = await supabase

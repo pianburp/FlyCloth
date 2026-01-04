@@ -105,11 +105,22 @@ export const getCachedProductById = (productId: string) => unstable_cache(
 export const getCachedProductSearch = (query: string) => unstable_cache(
   async () => {
     const supabase = createCacheClient();
+    // Sanitize query to prevent filter injection
+    // Escape special PostgreSQL LIKE characters and Supabase filter syntax
+    const sanitizedQuery = query
+      .replace(/[%_]/g, '\\$&')  // Escape LIKE wildcards
+      .replace(/[,()]/g, '')     // Remove filter syntax breakers
+      .slice(0, 100);            // Limit query length
+    
+    if (!sanitizedQuery.trim()) {
+      return [];
+    }
+    
     const { data, error } = await supabase
       .from('products')
       .select('*, product_images(storage_path, media_type), product_variants(stock_quantity, fit, gsm)')
       .eq('is_active', true)
-      .or(`name.ilike.%${query}%,sku.ilike.%${query}%,description.ilike.%${query}%`)
+      .or(`name.ilike.%${sanitizedQuery}%,sku.ilike.%${sanitizedQuery}%,description.ilike.%${sanitizedQuery}%`)
       .order('created_at', { ascending: false })
       .limit(20);
     

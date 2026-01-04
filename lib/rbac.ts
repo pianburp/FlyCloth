@@ -30,6 +30,9 @@ export interface AuthUser {
  * This is the PRIMARY method for getting auth data in server components.
  * The middleware (proxy.ts) already fetches user and profile on every request,
  * so we reuse that data to avoid redundant database calls.
+ * 
+ * SECURITY: We validate that the header's user ID matches the actual session
+ * to prevent header spoofing attacks.
  */
 export async function getAuthFromHeaders(): Promise<AuthUser | null> {
   try {
@@ -38,6 +41,18 @@ export async function getAuthFromHeaders(): Promise<AuthUser | null> {
     
     if (authHeader) {
       const authData = JSON.parse(authHeader);
+      
+      // SECURITY: Validate header against actual Supabase session
+      // This prevents spoofing if someone bypasses middleware
+      const supabase = await createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      // If header claims a user but session doesn't match, reject it
+      if (!user || user.id !== authData.id) {
+        console.warn('[RBAC] Auth header mismatch - possible spoofing attempt');
+        return null;
+      }
+      
       return {
         id: authData.id,
         email: authData.email,

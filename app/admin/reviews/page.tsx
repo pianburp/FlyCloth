@@ -16,8 +16,7 @@ interface ReviewWithProduct {
     comment: string | null;
     created_at: string;
     product_name: string;
-    user_name: string | null;
-    user_email: string;
+    user_display_name: string; // Masked - no raw email exposed to client
 }
 
 export default async function ReviewsPage() {
@@ -62,11 +61,23 @@ export default async function ReviewsPage() {
     const { data: authData } = await serviceClient.auth.admin.listUsers();
     const authUsers = authData?.users || [];
 
-    // Merge data
+    // Helper to mask email for display (security: don't expose full email to client)
+    const maskEmail = (email: string): string => {
+        if (!email) return 'Anonymous';
+        const [local, domain] = email.split('@');
+        if (!domain) return 'Anonymous';
+        const maskedLocal = local.length > 2 ? local[0] + '***' + local[local.length - 1] : '***';
+        return `${maskedLocal}@${domain}`;
+    };
+
+    // Merge data - only expose display name, not raw email
     const reviewsWithDetails: ReviewWithProduct[] = (reviews || []).map((review) => {
         const product = products?.find(p => p.id === review.product_id);
         const profile = profiles?.find(p => p.id === review.user_id);
         const authUser = authUsers.find(u => u.id === review.user_id);
+
+        // Use name if available, otherwise masked email
+        const displayName = profile?.full_name || (authUser?.email ? maskEmail(authUser.email) : 'Anonymous');
 
         return {
             id: review.id,
@@ -75,8 +86,7 @@ export default async function ReviewsPage() {
             comment: review.comment,
             created_at: review.created_at,
             product_name: product?.name || 'Unknown Product',
-            user_name: profile?.full_name,
-            user_email: authUser?.email || 'Unknown',
+            user_display_name: displayName,
         };
     });
 

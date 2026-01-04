@@ -12,8 +12,7 @@ interface ReviewWithProduct {
     comment: string | null;
     created_at: string;
     product_name: string;
-    user_name: string | null;
-    user_email: string;
+    user_display_name: string; // Masked/anonymized - no raw email
 }
 
 interface ReviewsFilterProps {
@@ -96,7 +95,7 @@ export function ReviewsFilter({ reviews }: ReviewsFilterProps) {
                             )}
 
                             <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                                <span>{review.user_name || review.user_email}</span>
+                                <span>{review.user_display_name}</span>
                                 <span>•</span>
                                 <span>{formatDate(review.created_at)}</span>
                             </div>

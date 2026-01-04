@@ -8,9 +8,10 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Upload, Save, X, Loader2, Play } from "lucide-react";
 import Link from "next/link";
-import { useState, useCallback, useMemo } from "react";
+import { useState, useCallback, useMemo, useEffect } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
+import { AlertCircle, CheckCircle2 } from "lucide-react";
 
 const SIZES = ['XS', 'S', 'M', 'L', 'XL', 'XXL'];
 
@@ -28,6 +29,10 @@ const GSMS = [
 
 // Helper to check if file is video
 const isVideoFile = (file: File) => file.type.startsWith('video/');
+
+// File upload limits
+const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB
+const MAX_FILES = 10;
 
 export default function AddProductClient() {
   const router = useRouter();
@@ -54,6 +59,48 @@ export default function AddProductClient() {
   const [files, setFiles] = useState<File[]>([]);
   const [previewUrls, setPreviewUrls] = useState<string[]>([]);
 
+  // SKU validation state
+  const [skuStatus, setSkuStatus] = useState<'idle' | 'checking' | 'available' | 'taken'>('idle');
+  const [skuError, setSkuError] = useState<string | null>(null);
+
+  // Debounced SKU validation
+  useEffect(() => {
+    const sku = formData.sku.trim();
+
+    if (!sku) {
+      setSkuStatus('idle');
+      setSkuError(null);
+      return;
+    }
+
+    // Validate SKU format
+    if (!/^[A-Za-z0-9-_]+$/.test(sku)) {
+      setSkuStatus('idle');
+      setSkuError('SKU can only contain letters, numbers, hyphens, and underscores');
+      return;
+    }
+
+    setSkuStatus('checking');
+    setSkuError(null);
+
+    const timer = setTimeout(async () => {
+      const { count } = await supabase
+        .from('products')
+        .select('*', { count: 'exact', head: true })
+        .eq('sku', sku);
+
+      if (count && count > 0) {
+        setSkuStatus('taken');
+        setSkuError('This SKU is already in use');
+      } else {
+        setSkuStatus('available');
+        setSkuError(null);
+      }
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [formData.sku, supabase]);
+
   const handleDrag = useCallback((e: React.DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
@@ -69,26 +116,94 @@ export default function AddProductClient() {
     e.stopPropagation();
     setDragActive(false);
     if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-      const newFiles = Array.from(e.dataTransfer.files);
-      setFiles((prev) => [...prev, ...newFiles]);
+      const droppedFiles = Array.from(e.dataTransfer.files);
 
-      // Create preview URLs
-      const newUrls = newFiles.map(file => URL.createObjectURL(file));
-      setPreviewUrls((prev) => [...prev, ...newUrls]);
+      // Validate file sizes
+      const validFiles: File[] = [];
+      const oversizedFiles: string[] = [];
+
+      for (const file of droppedFiles) {
+        if (file.size > MAX_FILE_SIZE) {
+          oversizedFiles.push(file.name);
+        } else {
+          validFiles.push(file);
+        }
+      }
+
+      if (oversizedFiles.length > 0) {
+        toast({
+          variant: "destructive",
+          title: "Files too large",
+          description: `The following files exceed 50MB limit: ${oversizedFiles.join(', ')}`,
+        });
+      }
+
+      // Check total file count
+      const remainingSlots = MAX_FILES - files.length;
+      const filesToAdd = validFiles.slice(0, remainingSlots);
+
+      if (validFiles.length > remainingSlots) {
+        toast({
+          variant: "destructive",
+          title: "Too many files",
+          description: `Maximum ${MAX_FILES} files allowed. Some files were not added.`,
+        });
+      }
+
+      if (filesToAdd.length > 0) {
+        setFiles((prev) => [...prev, ...filesToAdd]);
+        const newUrls = filesToAdd.map(file => URL.createObjectURL(file));
+        setPreviewUrls((prev) => [...prev, ...newUrls]);
+      }
     }
-  }, []);
+  }, [files.length, toast]);
 
   const handleChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     e.preventDefault();
     if (e.target.files && e.target.files[0]) {
-      const newFiles = Array.from(e.target.files);
-      setFiles((prev) => [...prev, ...newFiles]);
+      const selectedFiles = Array.from(e.target.files);
 
-      // Create preview URLs
-      const newUrls = newFiles.map(file => URL.createObjectURL(file));
-      setPreviewUrls((prev) => [...prev, ...newUrls]);
+      // Validate file sizes
+      const validFiles: File[] = [];
+      const oversizedFiles: string[] = [];
+
+      for (const file of selectedFiles) {
+        if (file.size > MAX_FILE_SIZE) {
+          oversizedFiles.push(file.name);
+        } else {
+          validFiles.push(file);
+        }
+      }
+
+      if (oversizedFiles.length > 0) {
+        toast({
+          variant: "destructive",
+          title: "Files too large",
+          description: `The following files exceed 50MB limit: ${oversizedFiles.join(', ')}`,
+        });
+      }
+
+      // Check total file count
+      const remainingSlots = MAX_FILES - files.length;
+      const filesToAdd = validFiles.slice(0, remainingSlots);
+
+      if (validFiles.length > remainingSlots) {
+        toast({
+          variant: "destructive",
+          title: "Too many files",
+          description: `Maximum ${MAX_FILES} files allowed. Some files were not added.`,
+        });
+      }
+
+      if (filesToAdd.length > 0) {
+        setFiles((prev) => [...prev, ...filesToAdd]);
+        const newUrls = filesToAdd.map(file => URL.createObjectURL(file));
+        setPreviewUrls((prev) => [...prev, ...newUrls]);
+      }
     }
-  }, []);
+    // Reset input so same file can be selected again
+    e.target.value = '';
+  }, [files.length, toast]);
 
   const removeFile = (index: number) => {
     setFiles(prev => prev.filter((_, i) => i !== index));
@@ -127,6 +242,25 @@ export default function AddProductClient() {
         variant: "destructive",
         title: "Missing Fields",
         description: "Please fill in all required fields (name, SKU, and price).",
+      });
+      return;
+    }
+
+    // Validate SKU is unique before proceeding
+    if (skuStatus === 'taken' || skuError) {
+      toast({
+        variant: "destructive",
+        title: "Invalid SKU",
+        description: skuError || "This SKU is already in use. Please choose a different one.",
+      });
+      return;
+    }
+
+    if (skuStatus === 'checking') {
+      toast({
+        variant: "destructive",
+        title: "Please Wait",
+        description: "SKU validation in progress. Please wait a moment.",
       });
       return;
     }
@@ -305,13 +439,26 @@ export default function AddProductClient() {
 
             <div className="space-y-2">
               <Label htmlFor="sku">SKU</Label>
-              <Input
-                id="sku"
-                value={formData.sku}
-                onChange={handleInputChange}
-                placeholder="e.g., SHIRT-001"
-                className="w-full"
-              />
+              <div className="relative">
+                <Input
+                  id="sku"
+                  value={formData.sku}
+                  onChange={handleInputChange}
+                  placeholder="e.g., SHIRT-001"
+                  className={`w-full pr-10 ${skuStatus === 'taken' || skuError ? 'border-destructive' : ''} ${skuStatus === 'available' ? 'border-green-500' : ''}`}
+                />
+                <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                  {skuStatus === 'checking' && <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />}
+                  {skuStatus === 'available' && <CheckCircle2 className="w-4 h-4 text-green-500" />}
+                  {(skuStatus === 'taken' || skuError) && <AlertCircle className="w-4 h-4 text-destructive" />}
+                </div>
+              </div>
+              {skuError && (
+                <p className="text-xs text-destructive">{skuError}</p>
+              )}
+              {skuStatus === 'available' && (
+                <p className="text-xs text-green-600">SKU is available</p>
+              )}
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">

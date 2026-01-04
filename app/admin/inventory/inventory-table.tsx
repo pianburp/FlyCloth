@@ -197,6 +197,8 @@ export function InventoryTable({ items }: InventoryTableProps) {
                                                 <Input
                                                     type="number"
                                                     min="0"
+                                                    max="100000"
+                                                    step="1"
                                                     value={editStock}
                                                     onChange={(e) => setEditStock(Math.max(0, parseInt(e.target.value) || 0))}
                                                     className="w-20 h-8 text-center mx-auto"

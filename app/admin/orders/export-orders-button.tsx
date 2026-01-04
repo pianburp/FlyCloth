@@ -20,8 +20,8 @@ interface ExportOrdersButtonProps {
 export function ExportOrdersButton({ orders }: ExportOrdersButtonProps) {
     const handleExport = () => {
         const columns: CSVColumn<Order>[] = [
-            { header: 'Order ID', accessor: 'id' },
-            { header: 'Customer ID', accessor: 'user_id' },
+            { header: 'Order ID', accessor: (order) => order.id.slice(0, 8).toUpperCase() }, // Shortened for privacy
+            { header: 'Customer Ref', accessor: (order) => `CUST-${order.user_id.slice(0, 6).toUpperCase()}` }, // Anonymized reference
             { header: 'Total (RM)', accessor: (order) => order.total_amount.toFixed(2) },
             { header: 'Status', accessor: 'status' },
             { header: 'Items', accessor: (order) => order.order_items?.length || 0 },

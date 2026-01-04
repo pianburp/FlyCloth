@@ -118,15 +118,36 @@ export async function POST(request: NextRequest) {
   // Parse shipping address from order
   const shippingAddr = order.shipping_address || {};
   
-  // Build recipient address
+  // SECURITY: Validate required address fields before creating shipment
+  const recipientLine1 = shippingAddr.line1 || shippingAddr.address || order.user_profile?.address || '';
+  const recipientPostcode = shippingAddr.postal_code || shippingAddr.postcode || '';
+  const recipientCity = shippingAddr.city || '';
+  const recipientState = shippingAddr.state || '';
+  const recipientContact = order.user_profile?.phone || '';
+  
+  // Validate required fields
+  const missingFields: string[] = [];
+  if (!recipientLine1.trim()) missingFields.push('address line 1');
+  if (!recipientPostcode.trim()) missingFields.push('postcode');
+  if (!recipientCity.trim()) missingFields.push('city');
+  if (!recipientState.trim()) missingFields.push('state');
+  if (!recipientContact.trim()) missingFields.push('phone number');
+  
+  if (missingFields.length > 0) {
+    return NextResponse.json({ 
+      error: `Missing required shipping details: ${missingFields.join(', ')}. Please update customer profile or order shipping address.` 
+    }, { status: 400 });
+  }
+  
+  // Build recipient address with validated fields
   const recipient = {
     name: shippingAddr.name || order.user_profile?.full_name || 'Customer',
-    contact: order.user_profile?.phone || settings.pickup_contact || process.env.STORE_PHONE || '0000000000',
-    line1: shippingAddr.line1 || shippingAddr.address || order.user_profile?.address || '',
+    contact: recipientContact,
+    line1: recipientLine1,
     line2: shippingAddr.line2 || '',
-    city: shippingAddr.city || 'Unknown',
-    state: shippingAddr.state || 'Unknown',
-    postcode: shippingAddr.postal_code || shippingAddr.postcode || '00000',
+    city: recipientCity,
+    state: recipientState,
+    postcode: recipientPostcode,
     country: shippingAddr.country || 'MY',
   };
 

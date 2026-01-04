@@ -3,6 +3,10 @@ import { NextResponse, type NextRequest } from "next/server";
 import { hasEnvVars } from "../utils";
 
 export async function updateSession(request: NextRequest) {
+  // SECURITY: Strip any incoming x-auth-user header to prevent spoofing
+  // This header should ONLY be set by this middleware, never from external requests
+  request.headers.delete('x-auth-user');
+  
   let supabaseResponse = NextResponse.next({
     request,
   });

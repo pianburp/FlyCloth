@@ -8,6 +8,19 @@ import { ReviewDialog } from "./review-dialog";
 
 export const dynamic = 'force-dynamic';
 
+// Type definitions for better type safety
+interface OrderItemWithVariant {
+  id: string;
+  variant_id: string;
+  product_name: string;
+  variant_info: string;
+  quantity: number;
+  unit_price: number;
+  product_variants?: {
+    product_id: string;
+  } | null;
+}
+
 function getStatusStyle(status: string) {
   switch (status) {
     case 'delivered':
@@ -45,12 +58,12 @@ export default async function OrdersPage() {
 
   const supabase = await createClient();
 
-  // Fetch orders with items and shipments
+  // Fetch orders with items (including product_id from variants) and shipments
   const { data: orders, error } = await supabase
     .from('orders')
     .select(`
       *,
-      order_items (*),
+      order_items (*, product_variants (product_id)),
       easyparcel_shipments (*)
     `)
     .eq('user_id', profile.id)
@@ -134,19 +147,13 @@ export default async function OrdersPage() {
 
               {/* Order Items */}
               <div className="divide-y divide-border/30">
-                {order.order_items.map((item: any) => {
-                  // Check if user has reviewed this product for this order
-                  const reviewKey = `${order.id}-${item.variant_id}`;
-                  // We need product_id, but we only have variant_id in order_items
-                  // For now, use a simplified approach - reviews are per product+order
-                  const existingReview = reviews?.find(
-                    r => r.order_id === order.id && item.product_name.includes(r.product_id.slice(0, 8))
-                  );
+                {order.order_items.map((item: OrderItemWithVariant) => {
+                  // Get the actual product_id from the variant relation
+                  const productId = item.product_variants?.product_id;
 
-                  // Simplified: find by matching order_id (since order_items don't have product_id)
-                  const itemReview = Array.from(reviewMap.entries()).find(
-                    ([key]) => key.startsWith(order.id)
-                  )?.[1];
+                  // Find review for this specific product in this order
+                  const reviewKey = `${order.id}-${productId}`;
+                  const itemReview = productId ? reviewMap.get(reviewKey) : undefined;
 
                   return (
                     <div key={item.id} className="px-6 py-4 flex flex-col sm:flex-row justify-between gap-2">
@@ -170,10 +177,10 @@ export default async function OrdersPage() {
                       </div>
                       <div className="flex items-center gap-3">
                         <p className="text-sm font-medium">RM {item.unit_price.toFixed(2)}</p>
-                        {/* Review button for delivered orders */}
-                        {order.status === 'delivered' && (
+                        {/* Review button for delivered orders - only if we have product_id */}
+                        {order.status === 'delivered' && productId && (
                           <ReviewDialog
-                            productId={item.variant_id} // Using variant_id as product reference
+                            productId={productId}
                             productName={item.product_name}
                             orderId={order.id}
                             existingReview={itemReview}

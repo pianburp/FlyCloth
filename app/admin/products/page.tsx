@@ -2,11 +2,12 @@ import { requireAdmin } from "@/lib/rbac";
 import { redirect } from "next/navigation";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ShirtIcon, PlusIcon, Pencil, Trash2, Package, TicketPercent, ExternalLink, Zap, CheckCircle } from "lucide-react";
+import { ShirtIcon, PlusIcon, Pencil, Package, CheckCircle } from "lucide-react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
 import { StripeGuideSheet } from "./stripe-guide-sheet";
+import { DeleteProductButton } from "./delete-product-button";
 
 export const dynamic = 'force-dynamic';
 
@@ -73,8 +74,56 @@ export default async function ProductsPage() {
     if (!id) return;
 
     const supabase = await createClient();
-    await supabase.from('products').delete().eq('id', id);
+
+    // Get all variant IDs for this product
+    const { data: variants } = await supabase
+      .from('product_variants')
+      .select('id')
+      .eq('product_id', id);
+
+    const variantIds = variants?.map(v => v.id) || [];
+
+    // Check for existing order items referencing these variants
+    let hasOrderItems = false;
+    if (variantIds.length > 0) {
+      const { count } = await supabase
+        .from('order_items')
+        .select('*', { count: 'exact', head: true })
+        .in('variant_id', variantIds);
+
+      hasOrderItems = (count || 0) > 0;
+    }
+
+    if (hasOrderItems) {
+      // Soft delete: Keep product for order history integrity
+      await supabase
+        .from('products')
+        .update({
+          is_active: false,
+          deleted_at: new Date().toISOString()
+        })
+        .eq('id', id);
+
+      // Also deactivate all variants
+      if (variantIds.length > 0) {
+        await supabase
+          .from('product_variants')
+          .update({ is_active: false })
+          .in('id', variantIds);
+      }
+    } else {
+      // Hard delete: No order history to preserve
+      // First delete related records (images, variants, cart items)
+      if (variantIds.length > 0) {
+        await supabase.from('cart_items').delete().in('variant_id', variantIds);
+        await supabase.from('product_variants').delete().eq('product_id', id);
+      }
+      await supabase.from('product_images').delete().eq('product_id', id);
+      await supabase.from('products').delete().eq('id', id);
+    }
+
     revalidatePath('/admin/products');
+    revalidatePath('/admin/inventory');
   }
 
   return (
@@ -177,13 +226,13 @@ export default async function ProductsPage() {
                           Edit
                         </Button>
                       </Link>
-                      <form action={deleteProduct} className="flex-1">
-                        <input type="hidden" name="id" value={product.id} />
-                        <Button variant="destructive" size="sm" type="submit" className="w-full">
-                          <Trash2 className="w-4 h-4 mr-2" />
-                          Delete
-                        </Button>
-                      </form>
+                      <div className="flex-1">
+                        <DeleteProductButton
+                          productId={product.id}
+                          productName={product.name}
+                          onDelete={deleteProduct}
+                        />
+                      </div>
                     </div>
                   </div>
                 );

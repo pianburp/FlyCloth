@@ -70,6 +70,17 @@ export default function OrderDetailsClient({ order }: { order: Order }) {
   const router = useRouter();
 
   const handleStatusChange = async (newStatus: string) => {
+    // Require confirmation for destructive status changes
+    const destructiveStatuses = ['cancelled', 'delivered'];
+    if (destructiveStatuses.includes(newStatus)) {
+      const confirmed = confirm(
+        `Are you sure you want to change the order status to "${formatStatus(newStatus)}"?\n\n` +
+        (newStatus === 'cancelled' ? 'This will restore stock and cannot be easily undone.' :
+          'This marks the order as complete.')
+      );
+      if (!confirmed) return;
+    }
+
     setIsUpdating(true);
     try {
       await trpc.orders.updateStatus.mutate({
