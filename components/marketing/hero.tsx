@@ -32,15 +32,16 @@ export function Hero() {
       {/* Main Content */}
       <div className="relative z-10 container mx-auto px-6 lg:px-12 flex flex-col items-center text-center">
 
-        {/* Main Heading */}
+        {/* Main Heading - SEO optimized with brand and keywords */}
         <motion.h1
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 1, delay: 0.4 }}
           className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-light tracking-tight leading-[0.95] text-white mb-6"
         >
-          <span className="block">Timeless</span>
-          <span className="block font-medium italic">Elegance</span>
+          <span className="block text-2xl sm:text-3xl md:text-4xl font-normal tracking-wider mb-2 text-white/80">FlyCloth</span>
+          <span className="block">Luxury Fashion</span>
+          <span className="block font-medium italic">Tailored for You</span>
         </motion.h1>
 
         {/* Subtitle */}

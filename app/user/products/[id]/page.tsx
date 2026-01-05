@@ -3,8 +3,50 @@ import { notFound } from "next/navigation";
 import ProductDetailsClient from "./product-details-client";
 import ReviewsSection from "./reviews-section";
 import { getCachedUserProfile } from "@/lib/rbac";
+import type { Metadata } from "next";
 
 export const dynamic = 'force-dynamic';
+
+// Generate dynamic metadata for SEO
+export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
+  const supabase = await createClient();
+  const { id } = await params;
+
+  const { data: product } = await supabase
+    .from('products')
+    .select('name, description, base_price')
+    .eq('id', id)
+    .single();
+
+  if (!product) {
+    return {
+      title: 'Product Not Found',
+    };
+  }
+
+  const baseUrl = process.env.VERCEL_URL
+    ? `https://${process.env.VERCEL_URL}`
+    : 'http://localhost:3000';
+
+  return {
+    title: product.name,
+    description: product.description || `Shop ${product.name} at FlyCloth. Premium luxury fashion starting from RM${product.base_price}.`,
+    openGraph: {
+      title: `${product.name} | FlyCloth`,
+      description: product.description || `Shop ${product.name} at FlyCloth. Premium luxury fashion.`,
+      type: 'website',
+      url: `${baseUrl}/user/products/${id}`,
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title: `${product.name} | FlyCloth`,
+      description: product.description || `Shop ${product.name} at FlyCloth.`,
+    },
+    alternates: {
+      canonical: `${baseUrl}/user/products/${id}`,
+    },
+  };
+}
 
 interface Review {
   id: string;
