@@ -56,7 +56,11 @@ export async function updateSession(request: NextRequest) {
 
   // Public routes - allow access without authentication
   const publicRoutes = ["/", "/auth/login", "/auth/sign-up", "/auth/error", "/auth/forgot-password", "/auth/sign-up-success", "/auth/update-password"];
-  const isPublicRoute = publicRoutes.some(route => path === route || path.startsWith("/auth/confirm"));
+  // Allow guests to browse products (viewing only - cart operations are still protected via tRPC)
+  const isProductBrowsingRoute = path.startsWith("/user/products");
+  // Allow API routes through - they handle their own auth (tRPC has protectedProcedure)
+  const isApiRoute = path.startsWith("/api");
+  const isPublicRoute = publicRoutes.some(route => path === route || path.startsWith("/auth/confirm")) || isProductBrowsingRoute || isApiRoute;
 
   // If no user and trying to access protected route, redirect to login
   if (!user && !isPublicRoute) {

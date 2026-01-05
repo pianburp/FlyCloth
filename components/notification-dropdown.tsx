@@ -13,6 +13,7 @@ import {
 import { cn } from "@/lib/utils";
 import Link from "next/link";
 import { trpc } from "@/lib/trpc/client";
+import { useAuth } from "@/lib/auth-context";
 
 type NotificationType =
     | 'order_created'
@@ -66,14 +67,19 @@ function formatTimeAgo(dateString: string): string {
 }
 
 export function NotificationDropdown() {
+    const { user } = useAuth();
     const [notifications, setNotifications] = useState<Notification[]>([]);
     const [isOpen, setIsOpen] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
 
     const unreadCount = notifications.filter((n) => !n.is_read).length;
 
-    // Fetch notifications
+    // Fetch notifications (only for authenticated users)
     const fetchNotifications = useCallback(async () => {
+        if (!user) {
+            setIsLoading(false);
+            return;
+        }
         try {
             const data = await trpc.notifications.list.query({ limit: 20 });
             setNotifications(data as Notification[]);
@@ -82,18 +88,22 @@ export function NotificationDropdown() {
         } finally {
             setIsLoading(false);
         }
-    }, []);
+    }, [user]);
 
-    // Initial fetch and refetch when dropdown opens
+    // Initial fetch and refetch when dropdown opens (only if authenticated)
     useEffect(() => {
-        fetchNotifications();
-    }, [fetchNotifications]);
+        if (user) {
+            fetchNotifications();
+        } else {
+            setIsLoading(false);
+        }
+    }, [user, fetchNotifications]);
 
     useEffect(() => {
-        if (isOpen) {
+        if (isOpen && user) {
             fetchNotifications();
         }
-    }, [isOpen, fetchNotifications]);
+    }, [isOpen, user, fetchNotifications]);
 
     // Mark all as read
     const markAllAsRead = async () => {
@@ -121,6 +131,11 @@ export function NotificationDropdown() {
             console.error('Failed to mark as read:', error);
         }
     };
+
+    // Don't show notification bell for guests
+    if (!user) {
+        return null;
+    }
 
     return (
         <DropdownMenu open={isOpen} onOpenChange={setIsOpen}>

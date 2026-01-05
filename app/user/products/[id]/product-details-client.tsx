@@ -1,13 +1,15 @@
 "use client";
 
 import { useState, useMemo } from "react";
+import { useRouter, usePathname } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Minus, Plus, ShoppingCart, Play } from "lucide-react";
+import { Minus, Plus, ShoppingCart, Play, LogIn } from "lucide-react";
 import { trpc } from "@/lib/trpc/client";
 import { createClient } from "@/lib/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
+import { useAuth } from "@/lib/auth-context";
 
 interface Product {
   id: string;
@@ -41,6 +43,10 @@ interface ProductDetailsClientProps {
 const isVideo = (media: ProductImage) => media.media_type === 'video';
 
 export default function ProductDetailsClient({ product, variants, images }: ProductDetailsClientProps) {
+  const router = useRouter();
+  const pathname = usePathname();
+  const { user } = useAuth();
+
   // Combine state into one object for cleaner updates
   const [state, setState] = useState({
     fit: null as string | null,
@@ -94,6 +100,25 @@ export default function ProductDetailsClient({ product, variants, images }: Prod
   const handleAddToCart = async () => {
     if (!selectedVariant) return;
 
+    // Check if user is logged in before attempting
+    if (!user) {
+      toast({
+        title: "Login Required",
+        description: "Please sign in to add items to your cart.",
+        action: (
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => router.push(`/auth/login?redirect=${encodeURIComponent(pathname)}`)}
+          >
+            <LogIn className="w-4 h-4 mr-2" />
+            Sign In
+          </Button>
+        ),
+      });
+      return;
+    }
+
     setIsAdding(true);
     try {
       const result = await trpc.cart.addToCart.mutate({
@@ -112,13 +137,31 @@ export default function ProductDetailsClient({ product, variants, images }: Prod
           description: `${quantity} x ${product.name} (${state.size}, ${fits.find(f => f.value === state.fit)?.label}${selectedVariant.gsm ? `, ${selectedVariant.gsm}gsm` : ''}) added to your cart.`,
         });
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error(error);
-      toast({
-        variant: "destructive",
-        title: "Something went wrong",
-        description: "Please try again later.",
-      });
+      // Handle unauthorized error (shouldn't happen with the check above, but safety net)
+      if (error?.message?.includes('UNAUTHORIZED') || error?.data?.code === 'UNAUTHORIZED') {
+        toast({
+          title: "Session Expired",
+          description: "Please sign in again to continue.",
+          action: (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => router.push(`/auth/login?redirect=${encodeURIComponent(pathname)}`)}
+            >
+              <LogIn className="w-4 h-4 mr-2" />
+              Sign In
+            </Button>
+          ),
+        });
+      } else {
+        toast({
+          variant: "destructive",
+          title: "Something went wrong",
+          description: "Please try again later.",
+        });
+      }
     } finally {
       setIsAdding(false);
     }
