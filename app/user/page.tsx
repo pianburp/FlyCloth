@@ -2,6 +2,9 @@ import { getCachedFeaturedProducts, getCachedAllProducts } from "@/lib/queries";
 import { createClient } from "@/lib/supabase/server";
 import UserDashboardClient from "./user-dashboard-client";
 
+// Force dynamic rendering since we use cookies for auth
+export const dynamic = 'force-dynamic';
+
 // Server Component - fetches data on the server with caching
 export default async function UserDashboard() {
   // Fetch products using cached queries (fast, server-side)
